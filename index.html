@@ -223,6 +223,39 @@
     <article class="col-12 col-md-12 mx-auto index-info">
       <h1 class="index-header">
         
+        <a href="/2022/11/14/strace%E5%AE%9E%E7%8E%B0%E5%8E%9F%E7%90%86%EF%BC%9Aptrace%E7%B3%BB%E7%BB%9F%E8%B0%83%E7%94%A8/" target="_self">
+          strace实现原理：ptrace系统调用
+        </a>
+      </h1>
+
+      
+      <a class="index-excerpt index-excerpt__noimg" href="/2022/11/14/strace%E5%AE%9E%E7%8E%B0%E5%8E%9F%E7%90%86%EF%BC%9Aptrace%E7%B3%BB%E7%BB%9F%E8%B0%83%E7%94%A8/" target="_self">
+        <div>
+          什么是strace？根据strace官网的描述，strace是一个Linux用户空间跟踪器，可用于诊断、调试和教学。我们用它来监控用户空间进程和内核之间的交互，比如系统调用、信令、进程状态变化等等。 strace 使用内核的 ptrace 特性来实现其功能。 在运维的日常工作中，故障处理和问题诊断是主要内容和必备技能。strace 可以作为跟踪故障过程的有效工具。就像侦探通过系统调用的痕迹告诉你异
+        </div>
+      </a>
+
+      <div class="index-btm post-metas">
+        
+          <div class="post-meta mr-3">
+            <i class="iconfont icon-date"></i>
+            <time datetime="2022-11-14 21:48" pubdate>
+              2022-11-14
+            </time>
+          </div>
+        
+        
+        
+      </div>
+    </article>
+  </div>
+
+  <div class="row mx-auto index-card">
+    
+    
+    <article class="col-12 col-md-12 mx-auto index-info">
+      <h1 class="index-header">
+        
         <a href="/2022/11/14/Android%E5%86%85%E5%AD%98%E8%AF%BB%E5%86%99%E6%96%AD%E7%82%B9-mprotect/" target="_self">
           Android内存读写断点--mprotect
         </a>
@@ -322,15 +355,15 @@
     <article class="col-12 col-md-12 mx-auto index-info">
       <h1 class="index-header">
         
-        <a href="/2022/11/14/hello-world/" target="_self">
-          Hello World
+        <a href="/2022/06/27/ptrace%E6%B3%A8%E5%85%A5so/" target="_self">
+          ptrace注入so
         </a>
       </h1>
 
       
-      <a class="index-excerpt index-excerpt__noimg" href="/2022/11/14/hello-world/" target="_self">
+      <a class="index-excerpt index-excerpt__noimg" href="/2022/06/27/ptrace%E6%B3%A8%E5%85%A5so/" target="_self">
         <div>
-          Welcome to Hexo! This is your very first post. Check documentation for more info. If you get any problems when using Hexo, you can find the answer in troubleshooting or you can ask me on GitHub. Quick
+          So注入so注入的主要思路是：找到目标进程使用ptrace跟踪目标进程，保存目标进程的状态获得mmap、dlopen、dlsym等库函数在目标进程中的偏移地址调用mmap在目标进程内部申请一段内存空间将我们的ShellCode写入到刚才申请的内存空间中dlopen打开Shellcode，dlsym调用Shellcode库的函数恢复原so状态，detach 核心点 ptrace12345678#in
         </div>
       </a>
 
@@ -338,8 +371,74 @@
         
           <div class="post-meta mr-3">
             <i class="iconfont icon-date"></i>
-            <time datetime="2022-11-14 13:13" pubdate>
-              2022-11-14
+            <time datetime="2022-06-27 21:22" pubdate>
+              2022-06-27
+            </time>
+          </div>
+        
+        
+        
+      </div>
+    </article>
+  </div>
+
+  <div class="row mx-auto index-card">
+    
+    
+    <article class="col-12 col-md-12 mx-auto index-info">
+      <h1 class="index-header">
+        
+        <a href="/2022/06/26/Frida%E5%B7%A5%E4%BD%9C%E5%8E%9F%E7%90%86%E5%AD%A6%E4%B9%A0/" target="_self">
+          Frida工作原理学习
+        </a>
+      </h1>
+
+      
+      <a class="index-excerpt index-excerpt__noimg" href="/2022/06/26/Frida%E5%B7%A5%E4%BD%9C%E5%8E%9F%E7%90%86%E5%AD%A6%E4%B9%A0/" target="_self">
+        <div>
+          frida介绍frida是一款便携的,自由的,支持全平台的,hook框架，可以通过编写JavaScript,Python代码来和frida_server端进行交互,还记得当年用xposed时那种写了一大堆代码每次修改都要重新打包安装重启手机,那种调试调到头皮发麻的痛苦百分之30的时间都是在那里安装重启安装重启直到有一天遇到了小甜甜。 frida的代码结构123456789frida-core: F
+        </div>
+      </a>
+
+      <div class="index-btm post-metas">
+        
+          <div class="post-meta mr-3">
+            <i class="iconfont icon-date"></i>
+            <time datetime="2022-06-26 21:02" pubdate>
+              2022-06-26
+            </time>
+          </div>
+        
+        
+        
+      </div>
+    </article>
+  </div>
+
+  <div class="row mx-auto index-card">
+    
+    
+    <article class="col-12 col-md-12 mx-auto index-info">
+      <h1 class="index-header">
+        
+        <a href="/2022/06/10/%E8%AE%B0%E5%BD%95%E4%B8%80%E6%AC%A1%E7%BC%96%E8%AF%91%E5%86%85%E6%A0%B8%EF%BC%8C%E4%BF%AE%E6%94%B9%E5%86%85%E6%A0%B8%E6%BA%90%E7%A0%81%E7%9B%91%E6%8E%A7%E7%B3%BB%E7%BB%9F%E8%B0%83%E7%94%A8/" target="_self">
+          记录一次编译内核，修改内核源码监控系统调用
+        </a>
+      </h1>
+
+      
+      <a class="index-excerpt index-excerpt__noimg" href="/2022/06/10/%E8%AE%B0%E5%BD%95%E4%B8%80%E6%AC%A1%E7%BC%96%E8%AF%91%E5%86%85%E6%A0%B8%EF%BC%8C%E4%BF%AE%E6%94%B9%E5%86%85%E6%A0%B8%E6%BA%90%E7%A0%81%E7%9B%91%E6%8E%A7%E7%B3%BB%E7%BB%9F%E8%B0%83%E7%94%A8/" target="_self">
+        <div>
+          记录一次编译内核修改内核源码监控系统调用最近看了很多很好的贴子啊SVC的TraceHook沙箱的实现&amp;无痕Hook实现思路https://bbs.pediy.com/thread-273160.htmAndroid通用svc跟踪以及hook方案——Frida-Seccomphttps://bbs.pediy.com/thread-271815.htm又菜又想搞svc，就只能做最简单无脑的了
+        </div>
+      </a>
+
+      <div class="index-btm post-metas">
+        
+          <div class="post-meta mr-3">
+            <i class="iconfont icon-date"></i>
+            <time datetime="2022-06-10 20:50" pubdate>
+              2022-06-10
             </time>
           </div>
         

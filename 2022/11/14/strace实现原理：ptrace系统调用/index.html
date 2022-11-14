@@ -1,0 +1,688 @@
+
+
+<!DOCTYPE html>
+<html lang="zh-CN" data-default-color-scheme=auto>
+
+
+
+<head>
+  <meta charset="UTF-8">
+  <link rel="apple-touch-icon" sizes="76x76" href="/img/fluid.png">
+  <link rel="icon" href="/img/fluid.png">
+  <meta name="viewport" content="width=device-width, initial-scale=1.0, maximum-scale=5.0, shrink-to-fit=no">
+  <meta http-equiv="x-ua-compatible" content="ie=edge">
+  
+  <meta name="theme-color" content="#2f4154">
+  <meta name="author" content="听说你是小兔叽">
+  <meta name="keywords" content="">
+  
+    <meta name="description" content="什么是strace？根据strace官网的描述，strace是一个Linux用户空间跟踪器，可用于诊断、调试和教学。我们用它来监控用户空间进程和内核之间的交互，比如系统调用、信令、进程状态变化等等。 strace 使用内核的 ptrace 特性来实现其功能。 在运维的日常工作中，故障处理和问题诊断是主要内容和必备技能。strace 可以作为跟踪故障过程的有效工具。就像侦探通过系统调用的痕迹告诉你异">
+<meta property="og:type" content="article">
+<meta property="og:title" content="strace实现原理：ptrace系统调用">
+<meta property="og:url" content="http://example.com/2022/11/14/strace%E5%AE%9E%E7%8E%B0%E5%8E%9F%E7%90%86%EF%BC%9Aptrace%E7%B3%BB%E7%BB%9F%E8%B0%83%E7%94%A8/index.html">
+<meta property="og:site_name" content="听说你是小兔叽的博客">
+<meta property="og:description" content="什么是strace？根据strace官网的描述，strace是一个Linux用户空间跟踪器，可用于诊断、调试和教学。我们用它来监控用户空间进程和内核之间的交互，比如系统调用、信令、进程状态变化等等。 strace 使用内核的 ptrace 特性来实现其功能。 在运维的日常工作中，故障处理和问题诊断是主要内容和必备技能。strace 可以作为跟踪故障过程的有效工具。就像侦探通过系统调用的痕迹告诉你异">
+<meta property="og:locale" content="zh_CN">
+<meta property="article:published_time" content="2022-11-14T13:48:13.000Z">
+<meta property="article:modified_time" content="2022-11-14T13:59:55.865Z">
+<meta property="article:author" content="听说你是小兔叽">
+<meta name="twitter:card" content="summary_large_image">
+  
+  
+  
+  <title>strace实现原理：ptrace系统调用 - 听说你是小兔叽的博客</title>
+
+  <link  rel="stylesheet" href="https://lib.baomitu.com/twitter-bootstrap/4.6.1/css/bootstrap.min.css" />
+
+
+
+  <link  rel="stylesheet" href="https://lib.baomitu.com/github-markdown-css/4.0.0/github-markdown.min.css" />
+
+  <link  rel="stylesheet" href="https://lib.baomitu.com/hint.css/2.7.0/hint.min.css" />
+
+  <link  rel="stylesheet" href="https://lib.baomitu.com/fancybox/3.5.7/jquery.fancybox.min.css" />
+
+
+
+<!-- 主题依赖的图标库，不要自行修改 -->
+<!-- Do not modify the link that theme dependent icons -->
+
+<link rel="stylesheet" href="//at.alicdn.com/t/font_1749284_hj8rtnfg7um.css">
+
+
+
+<link rel="stylesheet" href="//at.alicdn.com/t/font_1736178_lbnruvf0jn.css">
+
+
+<link  rel="stylesheet" href="/css/main.css" />
+
+
+  <link id="highlight-css" rel="stylesheet" href="/css/highlight.css" />
+  
+    <link id="highlight-css-dark" rel="stylesheet" href="/css/highlight-dark.css" />
+  
+
+
+
+
+  <script id="fluid-configs">
+    var Fluid = window.Fluid || {};
+    Fluid.ctx = Object.assign({}, Fluid.ctx)
+    var CONFIG = {"hostname":"example.com","root":"/","version":"1.9.3","typing":{"enable":true,"typeSpeed":70,"cursorChar":"_","loop":false,"scope":[]},"anchorjs":{"enable":true,"element":"h1,h2,h3,h4,h5,h6","placement":"left","visible":"hover","icon":""},"progressbar":{"enable":true,"height_px":3,"color":"#29d","options":{"showSpinner":false,"trickleSpeed":100}},"code_language":{"enable":true,"default":"TEXT"},"copy_btn":true,"image_caption":{"enable":true},"image_zoom":{"enable":true,"img_url_replace":["",""]},"toc":{"enable":true,"placement":"right","headingSelector":"h1,h2,h3,h4,h5,h6","collapseDepth":0},"lazyload":{"enable":true,"loading_img":"/img/loading.gif","onlypost":false,"offset_factor":2},"web_analytics":{"enable":false,"follow_dnt":true,"baidu":null,"google":null,"gtag":null,"tencent":{"sid":null,"cid":null},"woyaola":null,"cnzz":null,"leancloud":{"app_id":null,"app_key":null,"server_url":null,"path":"window.location.pathname","ignore_local":false}},"search_path":"/local-search.xml"};
+
+    if (CONFIG.web_analytics.follow_dnt) {
+      var dntVal = navigator.doNotTrack || window.doNotTrack || navigator.msDoNotTrack;
+      Fluid.ctx.dnt = dntVal && (dntVal.startsWith('1') || dntVal.startsWith('yes') || dntVal.startsWith('on'));
+    }
+  </script>
+  <script  src="/js/utils.js" ></script>
+  <script  src="/js/color-schema.js" ></script>
+  
+
+
+  
+<meta name="generator" content="Hexo 6.3.0"></head>
+
+
+<body>
+  
+
+  <header>
+    
+
+<div class="header-inner" style="height: 70vh;">
+  <nav id="navbar" class="navbar fixed-top  navbar-expand-lg navbar-dark scrolling-navbar">
+  <div class="container">
+    <a class="navbar-brand" href="/">
+      <strong>听说你是小兔叽 个人博客</strong>
+    </a>
+
+    <button id="navbar-toggler-btn" class="navbar-toggler" type="button" data-toggle="collapse"
+            data-target="#navbarSupportedContent"
+            aria-controls="navbarSupportedContent" aria-expanded="false" aria-label="Toggle navigation">
+      <div class="animated-icon"><span></span><span></span><span></span></div>
+    </button>
+
+    <!-- Collapsible content -->
+    <div class="collapse navbar-collapse" id="navbarSupportedContent">
+      <ul class="navbar-nav ml-auto text-center">
+        
+          
+          
+          
+          
+            <li class="nav-item">
+              <a class="nav-link" href="/">
+                <i class="iconfont icon-home-fill"></i>
+                首页
+              </a>
+            </li>
+          
+        
+          
+          
+          
+          
+            <li class="nav-item">
+              <a class="nav-link" href="/archives/">
+                <i class="iconfont icon-archive-fill"></i>
+                归档
+              </a>
+            </li>
+          
+        
+          
+          
+          
+          
+            <li class="nav-item">
+              <a class="nav-link" href="/categories/">
+                <i class="iconfont icon-category-fill"></i>
+                分类
+              </a>
+            </li>
+          
+        
+          
+          
+          
+          
+            <li class="nav-item">
+              <a class="nav-link" href="/tags/">
+                <i class="iconfont icon-tags-fill"></i>
+                标签
+              </a>
+            </li>
+          
+        
+          
+          
+          
+          
+            <li class="nav-item">
+              <a class="nav-link" href="/about/">
+                <i class="iconfont icon-user-fill"></i>
+                关于
+              </a>
+            </li>
+          
+        
+        
+          <li class="nav-item" id="search-btn">
+            <a class="nav-link" target="_self" href="javascript:;" data-toggle="modal" data-target="#modalSearch" aria-label="Search">
+              &nbsp;<i class="iconfont icon-search"></i>&nbsp;
+            </a>
+          </li>
+          
+        
+        
+          <li class="nav-item" id="color-toggle-btn">
+            <a class="nav-link" target="_self" href="javascript:;" aria-label="Color Toggle">&nbsp;<i
+                class="iconfont icon-dark" id="color-toggle-icon"></i>&nbsp;</a>
+          </li>
+        
+      </ul>
+    </div>
+  </div>
+</nav>
+
+  
+
+<div id="banner" class="banner" parallax=true
+     style="background: url('/img/default.png') no-repeat center center; background-size: cover;">
+  <div class="full-bg-img">
+    <div class="mask flex-center" style="background-color: rgba(0, 0, 0, 0.3)">
+      <div class="banner-text text-center fade-in-up">
+        <div class="h2">
+          
+            <span id="subtitle" data-typed-text="strace实现原理：ptrace系统调用"></span>
+          
+        </div>
+
+        
+          
+  <div class="mt-3">
+    
+    
+      <span class="post-meta">
+        <i class="iconfont icon-date-fill" aria-hidden="true"></i>
+        <time datetime="2022-11-14 21:48" pubdate>
+          2022年11月14日 晚上
+        </time>
+      </span>
+    
+  </div>
+
+  <div class="mt-1">
+    
+      <span class="post-meta mr-2">
+        <i class="iconfont icon-chart"></i>
+        
+          29k 字
+        
+      </span>
+    
+
+    
+      <span class="post-meta mr-2">
+        <i class="iconfont icon-clock-fill"></i>
+        
+        
+        
+          241 分钟
+        
+      </span>
+    
+
+    
+    
+  </div>
+
+
+        
+      </div>
+
+      
+    </div>
+  </div>
+</div>
+
+</div>
+
+  </header>
+
+  <main>
+    
+      
+
+<div class="container-fluid nopadding-x">
+  <div class="row nomargin-x">
+    <div class="side-col d-none d-lg-block col-lg-2">
+      
+
+    </div>
+
+    <div class="col-lg-8 nopadding-x-md">
+      <div class="container nopadding-x-md" id="board-ctn">
+        <div id="board">
+          <article class="post-content mx-auto">
+            <!-- SEO header -->
+            <h1 style="display: none">strace实现原理：ptrace系统调用</h1>
+            
+            
+              <div class="markdown-body">
+                
+                <h1 id="什么是strace？"><a href="#什么是strace？" class="headerlink" title="什么是strace？"></a>什么是strace？</h1><p>根据strace官网的描述，strace是一个Linux用户空间跟踪器，可用于诊断、调试和教学。我们用它来监控用户空间进程和内核之间的交互，比如系统调用、信令、进程状态变化等等。</p>
+<p>strace 使用内核的 ptrace 特性来实现其功能。</p>
+<p>在运维的日常工作中，故障处理和问题诊断是主要内容和必备技能。strace 可以作为跟踪故障过程的有效工具。就像侦探通过系统调用的痕迹告诉你异常的真相。</p>
+<p>这次想分享一个实用的东西，就是写一个strace工具。</p>
+<p>用过strace的同学都知道，strace是用来跟踪进程调用的系统调用的，还可以统计进程调用对系统调用的统计。strace有两种使用方式，如下：</p>
+<p>strace的过程<br>strace -p 进程 pid<br>第一个用于跟踪要执行的程序，而第二个用于跟踪正在运行的进程。</p>
+<p>下图是用 strace 跟踪 ls 命令的结果</p>
+<figure class="highlight bash"><table><tr><td class="gutter"><pre><span class="line">1</span><br><span class="line">2</span><br><span class="line">3</span><br><span class="line">4</span><br><span class="line">5</span><br><span class="line">6</span><br><span class="line">7</span><br><span class="line">8</span><br><span class="line">9</span><br><span class="line">10</span><br><span class="line">11</span><br><span class="line">12</span><br><span class="line">13</span><br><span class="line">14</span><br><span class="line">15</span><br><span class="line">16</span><br><span class="line">17</span><br><span class="line">18</span><br><span class="line">19</span><br><span class="line">20</span><br><span class="line">21</span><br><span class="line">22</span><br><span class="line">23</span><br><span class="line">24</span><br><span class="line">25</span><br><span class="line">26</span><br><span class="line">27</span><br><span class="line">28</span><br><span class="line">29</span><br><span class="line">30</span><br><span class="line">31</span><br></pre></td><td class="code"><pre><code class="hljs bash">$ strace <span class="hljs-built_in">ls</span><br>--- Process 15332 created<br>--- Process 15332 loaded C:\Windows\System32\ntdll.dll at 00007ffdd6fd0000<br>--- Process 15332 loaded C:\Windows\System32\kernel32.dll at 00007ffdd4660000<br>--- Process 15332 loaded C:\Windows\System32\KernelBase.dll at 00007ffdd40b0000<br>--- Process 15332 thread 2208 created<br>--- Process 15332 thread 9072 created<br>--- Process 15332 loaded D:\Program Files (x86)\cygwin64\bin\cygwin1.dll at 0000000180040000<br>--- Process 15332 loaded D:\Program Files (x86)\cygwin64\bin\cygintl-8.dll at 00000003c0ba0000<br>--- Process 15332 thread 13508 created<br>--- Process 15332 loaded D:\Program Files (x86)\cygwin64\bin\cygiconv-2.dll at 00000003cf8b0000<br>    0       0 [main] <span class="hljs-built_in">ls</span> (15332) **********************************************<br>   42      42 [main] <span class="hljs-built_in">ls</span> (15332) Program name: D:\Program Files (x86)\cygwin64\bin\ls.exe (windows pid 15332)<br>   27      69 [main] <span class="hljs-built_in">ls</span> (15332) OS version:   Windows NT-10.0<br>   24      93 [main] <span class="hljs-built_in">ls</span> (15332) **********************************************<br>--- Process 15332 loaded C:\Windows\System32\advapi32.dll at 00007ffdd4500000<br>--- Process 15332 loaded C:\Windows\System32\msvcrt.dll at 00007ffdd6830000<br>--- Process 15332 loaded C:\Windows\System32\sechost.dll at 00007ffdd4a50000<br>--- Process 15332 loaded C:\Windows\System32\rpcrt4.dll at 00007ffdd48d0000<br><br>A lot is omitted here<br><br>   19   24022 [main] <span class="hljs-built_in">ls</span> 588 proc_terminate: nprocs 0<br>   19   24041 [main] <span class="hljs-built_in">ls</span> 588 proc_terminate: leaving<br>   25   24066 [main] <span class="hljs-built_in">ls</span> 588 pinfo::<span class="hljs-built_in">exit</span>: Calling dlls.cleanup_forkables n 0x0, exitcode 0x0<br>   21   24087 [main] <span class="hljs-built_in">ls</span> 588 pinfo::<span class="hljs-built_in">exit</span>: Calling ExitProcess n 0x0, exitcode 0x0<br>--- Process 15332 (pid: 588) thread 9072 exited with status 0x0<br>--- Process 15332 (pid: 588) thread 2208 exited with status 0x0<br>--- Process 15332 (pid: 588) thread 6340 exited with status 0x0<br>--- Process 15332 (pid: 588) thread 13508 exited with status 0x0<br>--- Process 15332 (pid: 588) exited with status 0x0<br></code></pre></td></tr></table></figure>
+
+<h1 id="自己写一个-strace-的第一步是了解-ptrace-系统调用的使用。我们来看看ptrace-系统调用的定义"><a href="#自己写一个-strace-的第一步是了解-ptrace-系统调用的使用。我们来看看ptrace-系统调用的定义" class="headerlink" title="自己写一个 strace 的第一步是了解 ptrace() 系统调用的使用。我们来看看ptrace()系统调用的定义"></a>自己写一个 strace 的第一步是了解 ptrace() 系统调用的使用。我们来看看ptrace()系统调用的定义</h1><figure class="highlight bash"><table><tr><td class="gutter"><pre><span class="line">1</span><br></pre></td><td class="code"><pre><code class="hljs bash">int ptrace(long request, long pid, long addr, long data);<br></code></pre></td></tr></table></figure>
+<p>ptrace() 系统调用用于跟踪进程的运行状态。下面介绍其参数的含义：</p>
+<p>请求：指定要跟踪的操作。换句话说，可以通过传入不同的请求参数，对进程进行不同的跟踪。可选值是：<br>PTRACE_TRACEME<br>PTRACE_PEEKTEXT<br>PTRACE_POKETEXT<br>PTRACE_CONT<br>PTRACE_SINGLESTEP<br>…<br>PID：指定要跟踪的进程的PID。<br>addr：指定要读取或修改的内存地址。<br>数据：对于不同的请求操作，数据有不同的作用，下面会分别介绍。<br>如前所述，有两种方法可以使用 strace 跟踪进程。一种是通过strace命令启动进程，另一种是通过-p指定要跟踪的进程。</p>
+<p>ptrace() 系统调用还提供了两种“请求”来实现上述两种方式：</p>
+<p>第一个是通过 ptrace_Trace</p>
+<p>第二个是通过 PTRACE_ATTACH</p>
+<p>本文主要介绍第一种方法。由于第一种方法使用跟踪器启动被跟踪程序，因此需要启动两个进程。通常，可以使用 fork() 系统调用来创建一个新进程，所以我们自然也使用了 fork() 系统调用。</p>
+<p>我们新建一个文件strace.c，输入代码如下：</p>
+<figure class="highlight bash"><table><tr><td class="gutter"><pre><span class="line">1</span><br><span class="line">2</span><br><span class="line">3</span><br><span class="line">4</span><br><span class="line">5</span><br><span class="line">6</span><br><span class="line">7</span><br><span class="line">8</span><br><span class="line">9</span><br><span class="line">10</span><br></pre></td><td class="code"><pre><code class="hljs bash">int main(int argc, char *argv[])&#123;<br>    pid_t child;<br>    child = fork();<br>    <span class="hljs-keyword">if</span> (child == 0) &#123;<br>        // Child process<br>    &#125; <span class="hljs-keyword">else</span> &#123;<br>        // Parent process<br>    &#125;<br>    <span class="hljs-built_in">return</span> 0;<br>&#125;<br></code></pre></td></tr></table></figure>
+
+<p>上面的代码通过调用fork()创建了一个子进程，但是什么都不做。之后，我们将在子进程中运行被跟踪的程序，在父进程中运行跟踪进程代码。</p>
+<h1 id="运行跟踪的程序"><a href="#运行跟踪的程序" class="headerlink" title="运行跟踪的程序"></a>运行跟踪的程序</h1><p>如前所述，被跟踪的程序需要在子进程中运行。要运行程序，您可以调用 execl() 系统。因此，您可以通过以下代码在子进程中运行 ls 命令：</p>
+<figure class="highlight bash"><table><tr><td class="gutter"><pre><span class="line">1</span><br><span class="line">2</span><br><span class="line">3</span><br><span class="line">4</span><br><span class="line">5</span><br><span class="line">6</span><br><span class="line">7</span><br><span class="line">8</span><br><span class="line">9</span><br><span class="line">10</span><br><span class="line">11</span><br><span class="line">12</span><br><span class="line">13</span><br><span class="line">14</span><br></pre></td><td class="code"><pre><code class="hljs bash"><span class="hljs-comment">#include &lt;unistd.h&gt;</span><br><span class="hljs-comment">#include &lt;stdlib.h&gt;</span><br><br>int main(int argc, char *argv[])&#123;<br>    pid_t child;<br>    child = fork();<br>    <span class="hljs-keyword">if</span> (child == 0) &#123;<br>        execl(<span class="hljs-string">&quot;/bin/ls&quot;</span>, <span class="hljs-string">&quot;/bin/ls&quot;</span>, NULL);<br>        <span class="hljs-built_in">exit</span>(0);<br>    &#125; <span class="hljs-keyword">else</span> &#123;<br>        // Parent process<br>    &#125;<br>    <span class="hljs-built_in">return</span> 0;<br>&#125;<br></code></pre></td></tr></table></figure>
+
+<p>execl() 用于执行指定的程序。如果执行成功，则不会返回。因此，EXECL(…) 的下一行代码 exit(0) 将不会被执行。</p>
+<p>由于我们需要跟踪ls命令，所以在执行ls命令之前必须调用ptrace(ptrace_trace,0,null,null)来告诉系统需要跟踪进程。代码如下：</p>
+<figure class="highlight bash"><table><tr><td class="gutter"><pre><span class="line">1</span><br><span class="line">2</span><br><span class="line">3</span><br><span class="line">4</span><br><span class="line">5</span><br><span class="line">6</span><br><span class="line">7</span><br><span class="line">8</span><br><span class="line">9</span><br><span class="line">10</span><br><span class="line">11</span><br><span class="line">12</span><br><span class="line">13</span><br><span class="line">14</span><br><span class="line">15</span><br><span class="line">16</span><br><span class="line">17</span><br><span class="line">18</span><br><span class="line">19</span><br></pre></td><td class="code"><pre><code class="hljs bash"><span class="hljs-comment">#include &lt;sys/ptrace.h&gt;</span><br><span class="hljs-comment">#include &lt;unistd.h&gt;</span><br><span class="hljs-comment">#include &lt;stdlib.h&gt;</span><br><br>int main(int argc, char *argv[])<br>&#123;<br>    pid_t child;<br><br>    child = fork();<br>    <span class="hljs-keyword">if</span> (child == 0) &#123;<br>        ptrace(PTRACE_TRACEME, 0, NULL, NULL);<br>        execl(<span class="hljs-string">&quot;/bin/ls&quot;</span>, <span class="hljs-string">&quot;/bin/ls&quot;</span>, NULL);<br>        <span class="hljs-built_in">exit</span>(0);<br>    &#125; <span class="hljs-keyword">else</span> &#123;<br>        // Parent process<br>    &#125;<br><br>    <span class="hljs-built_in">return</span> 0;<br>&#125;<br></code></pre></td></tr></table></figure>
+
+<p>这样就完成了被跟踪进程部分的代码，然后启动跟踪进程部分的代码。</p>
+<h1 id="编写跟踪过程代码"><a href="#编写跟踪过程代码" class="headerlink" title="编写跟踪过程代码"></a>编写跟踪过程代码</h1><p>如果你编译运行上面的代码，你会发现没有任何效果。这是因为当子进程调用 ptrace (ptrace_trace, 0, null, null) 并调用 execl() 系统调用时，子进程会向父进程（跟踪进程）发送 SIGCHLD 信号并停止运行本身。直到父进程发送调试命令，它才会继续运行。</p>
+<p>因为在上面的代码中，父进程（跟踪进程）并没有发送任何调试命令退出，所以子进程（被跟踪进程）没有运行就随父进程退出，所以你不会看到任何效果。</p>
+<p>现在让我们开始编写代码来跟踪这个过程。</p>
+<p>由于被跟踪进程会向跟踪进程发送 SIGCHLD 消息，所以我们必须首先在跟踪进程的代码中接收到 SIGCHLD 信号。接收信号通过“wait()”系统调用完成，代码如下：</p>
+<figure class="highlight bash"><table><tr><td class="gutter"><pre><span class="line">1</span><br><span class="line">2</span><br><span class="line">3</span><br><span class="line">4</span><br><span class="line">5</span><br><span class="line">6</span><br><span class="line">7</span><br><span class="line">8</span><br><span class="line">9</span><br><span class="line">10</span><br><span class="line">11</span><br><span class="line">12</span><br><span class="line">13</span><br><span class="line">14</span><br><span class="line">15</span><br><span class="line">16</span><br><span class="line">17</span><br><span class="line">18</span><br><span class="line">19</span><br><span class="line">20</span><br><span class="line">21</span><br></pre></td><td class="code"><pre><code class="hljs bash"><span class="hljs-comment">#include &lt;sys/ptrace.h&gt;</span><br><span class="hljs-comment">#include &lt;unistd.h&gt;</span><br><span class="hljs-comment">#include &lt;stdlib.h&gt;</span><br><span class="hljs-comment">#include &lt;stdio.h&gt;</span><br><br>int main(int argc, char *argv[])<br>&#123;<br>    pid_t child;<br>    int status;<br><br>    child = fork();<br>    <span class="hljs-keyword">if</span> (child == 0) &#123;<br>        ptrace(PTRACE_TRACEME, 0, NULL, NULL);<br>        execl(<span class="hljs-string">&quot;/bin/ls&quot;</span>, <span class="hljs-string">&quot;/bin/ls&quot;</span>, NULL);<br>        <span class="hljs-built_in">exit</span>(0);<br>    &#125; <span class="hljs-keyword">else</span> &#123;<br>        <span class="hljs-built_in">wait</span>(&amp;status); // Receive SIGCHLD signal sent by subprocess<br>    &#125;<br><br>    <span class="hljs-built_in">return</span> 0;<br>&#125;<br></code></pre></td></tr></table></figure>
+
+<p>上述代码调用“wait()”系统调用接收被跟踪进程发送的SIGCHLD信号，接下来需要开始向被跟踪进程发送调试命令，对被跟踪进程进行调试。</p>
+<p>由于本文介绍了如何跟踪某个进程进行了哪些系统调用，所以我们需要使用 ptrace() 的 ptrace_syscall 命令如下：</p>
+<figure class="highlight bash"><table><tr><td class="gutter"><pre><span class="line">1</span><br><span class="line">2</span><br><span class="line">3</span><br><span class="line">4</span><br><span class="line">5</span><br><span class="line">6</span><br><span class="line">7</span><br><span class="line">8</span><br><span class="line">9</span><br><span class="line">10</span><br><span class="line">11</span><br><span class="line">12</span><br><span class="line">13</span><br><span class="line">14</span><br><span class="line">15</span><br><span class="line">16</span><br><span class="line">17</span><br><span class="line">18</span><br><span class="line">19</span><br><span class="line">20</span><br><span class="line">21</span><br><span class="line">22</span><br><span class="line">23</span><br><span class="line">24</span><br><span class="line">25</span><br><span class="line">26</span><br><span class="line">27</span><br><span class="line">28</span><br><span class="line">29</span><br><span class="line">30</span><br><span class="line">31</span><br><span class="line">32</span><br><span class="line">33</span><br><span class="line">34</span><br></pre></td><td class="code"><pre><code class="hljs bash"><span class="hljs-comment">#include &lt;sys/ptrace.h&gt;</span><br><span class="hljs-comment">#include &lt;sys/user.h&gt;</span><br><span class="hljs-comment">#include &lt;unistd.h&gt;</span><br><span class="hljs-comment">#include &lt;stdlib.h&gt;</span><br><span class="hljs-comment">#include &lt;stdio.h&gt;</span><br><br>int main(int argc, char *argv[])<br>&#123;<br>    pid_t child;<br>    int status;<br>    struct user_regs_struct regs;<br>    int orig_rax;<br><br>    child = fork();<br>    <span class="hljs-keyword">if</span> (child == 0) &#123;<br>        ptrace(PTRACE_TRACEME, 0, NULL, NULL);<br>        execl(<span class="hljs-string">&quot;/bin/ls&quot;</span>, <span class="hljs-string">&quot;/bin/ls&quot;</span>, NULL);<br>        <span class="hljs-built_in">exit</span>(0);<br>    &#125; <span class="hljs-keyword">else</span> &#123;<br>        <span class="hljs-built_in">wait</span>(&amp;status); // Receive SIGCHLD signal sent by subprocess<br><br>        // 1. Send PTRACE_SYSCALL <span class="hljs-built_in">command</span> is given to the tracked process (parameters of system call can be obtained before calling system call)<br>        ptrace(PTRACE_SYSCALL, child, NULL, NULL);<br><br>        <span class="hljs-built_in">wait</span>(&amp;status); // Receive SIGCHLD signal sent by subprocess<br><br>        // 2. Send PTRACE_SYSCALL <span class="hljs-built_in">command</span> to the tracked process (after calling the system call, you can get the <span class="hljs-built_in">return</span> value of the system call)<br>        ptrace(PTRACE_SYSCALL, child, NULL, NULL);<br><br>        <span class="hljs-built_in">wait</span>(&amp;status); // Receive SIGCHLD signal sent by subprocess<br>    &#125;<br><br>    <span class="hljs-built_in">return</span> 0;<br>&#125;<br></code></pre></td></tr></table></figure>
+
+<p>从上面的代码可以看出，我们调用了两次ptrace(ptrace_syscall,child,null,null)。这是因为在跟踪系统调用时，需要跟踪系统调用前的环境（如获取系统调用的参数）和系统调用后的环境（如获取系统调用的返回值） . 因此，ptrace(ptrace)需要调用两次_SYSCALL,child,NULL,NULL)。</p>
+<h1 id="获取进程寄存器的值"><a href="#获取进程寄存器的值" class="headerlink" title="获取进程寄存器的值"></a>获取进程寄存器的值</h1><p>Linux系统调用通过CPU寄存器传递参数，因此要获取调用哪个系统调用，必须获取进程寄存器的值。获取进程寄存器的值，可以通过ptrace() system_getregs命令调用，代码如下：</p>
+<figure class="highlight bash"><table><tr><td class="gutter"><pre><span class="line">1</span><br><span class="line">2</span><br><span class="line">3</span><br><span class="line">4</span><br><span class="line">5</span><br><span class="line">6</span><br><span class="line">7</span><br><span class="line">8</span><br><span class="line">9</span><br><span class="line">10</span><br><span class="line">11</span><br><span class="line">12</span><br><span class="line">13</span><br><span class="line">14</span><br><span class="line">15</span><br><span class="line">16</span><br><span class="line">17</span><br><span class="line">18</span><br><span class="line">19</span><br><span class="line">20</span><br><span class="line">21</span><br><span class="line">22</span><br><span class="line">23</span><br><span class="line">24</span><br><span class="line">25</span><br><span class="line">26</span><br><span class="line">27</span><br><span class="line">28</span><br><span class="line">29</span><br><span class="line">30</span><br><span class="line">31</span><br><span class="line">32</span><br><span class="line">33</span><br><span class="line">34</span><br><span class="line">35</span><br><span class="line">36</span><br><span class="line">37</span><br><span class="line">38</span><br><span class="line">39</span><br><span class="line">40</span><br></pre></td><td class="code"><pre><code class="hljs bash"><span class="hljs-comment">#include &lt;sys/ptrace.h&gt;</span><br><span class="hljs-comment">#include &lt;sys/user.h&gt;</span><br><span class="hljs-comment">#include &lt;unistd.h&gt;</span><br><span class="hljs-comment">#include &lt;stdlib.h&gt;</span><br><span class="hljs-comment">#include &lt;stdio.h&gt;</span><br><br>int main(int argc, char *argv[])<br>&#123;<br>    pid_t child;<br>    int status;<br>    struct user_regs_struct regs;<br>    int orig_rax;<br><br>    child = fork();<br>    <span class="hljs-keyword">if</span> (child == 0) &#123;<br>        ptrace(PTRACE_TRACEME, 0, NULL, NULL);<br>        execl(<span class="hljs-string">&quot;/bin/ls&quot;</span>, <span class="hljs-string">&quot;/bin/ls&quot;</span>, NULL);<br>        <span class="hljs-built_in">exit</span>(0);<br>    &#125; <span class="hljs-keyword">else</span> &#123;<br>        <span class="hljs-built_in">wait</span>(&amp;status); // Receive SIGCHLD signal sent by subprocess<br><br>        // 1. Send PTRACE_SYSCALL <span class="hljs-built_in">command</span> is given to the tracked process (parameters of system call can be obtained before calling system call)<br>        ptrace(PTRACE_SYSCALL, child, NULL, NULL);<br><br>        <span class="hljs-built_in">wait</span>(&amp;status); // Receive SIGCHLD signal sent by subprocess<br><br>        ptrace(PTRACE_GETREGS, child, 0, &amp;regs); // Gets the value of the tracked process register<br><br>        orig_rax = regs.orig_rax; // Gets the value of the rax register<br><br>        <span class="hljs-built_in">printf</span>(<span class="hljs-string">&quot;orig_rax: %d\n&quot;</span>, orig_rax); // Print the value of the rax register<br><br>        // 2. Send PTRACE_SYSCALL <span class="hljs-built_in">command</span> to the tracked process (after calling the system call, you can get the <span class="hljs-built_in">return</span> value of the system call)<br>        ptrace(PTRACE_SYSCALL, child, NULL, NULL);<br><br>        <span class="hljs-built_in">wait</span>(&amp;status); // Receive SIGCHLD signal sent by subprocess<br>    &#125;<br><br>    <span class="hljs-built_in">return</span> 0;<br>&#125;<br></code></pre></td></tr></table></figure>
+<p>上述代码调用ptrace(ptrace)<em>getregs,child,0,®s)获取进程寄存器的值，ptrace_getregs命令需要传入data参数中user的类型_regs_指向struct结构体的指针，user</em> regs_struct结构定义如下（在文件sys&#x2F;user.h中）</p>
+<figure class="highlight bash"><table><tr><td class="gutter"><pre><span class="line">1</span><br><span class="line">2</span><br><span class="line">3</span><br><span class="line">4</span><br><span class="line">5</span><br><span class="line">6</span><br><span class="line">7</span><br><span class="line">8</span><br></pre></td><td class="code"><pre><code class="hljs bash">struct user_regs_struct &#123;<br>    unsigned long r15,r14,r13,r12,rbp,rbx,r11,r10;<br>    unsigned long r9,r8,rax,rcx,rdx,rsi,rdi,orig_rax;<br>    unsigned long rip,cs,eflags;<br>    unsigned long rsp,ss;<br>    unsigned long fs_base, gs_base;<br>    unsigned long ds,es,fs,gs;<br>&#125;;<br></code></pre></td></tr></table></figure>
+
+<p>其中struct结构体的user_regs_orig_rax保存了系统调用号，所以我们可以通过orig_rax的值来知道调用了哪个系统调用。</p>
+<p>编译运行上述代码，会输出结果：orig_rax: 12，表示系统调用编号为12。那么系统调用编号12是多少呢？您可以通过以下链接查看：</p>
+<p><a target="_blank" rel="noopener" href="https://www.cnblogs.com/gavanwanggw/p/6920826.html">https://www.cnblogs.com/gavanwanggw/p/6920826.html</a></p>
+<p>通过查找系统调用表，我们可以知道系统调用号12是brk()，如下：</p>
+<figure class="highlight bash"><table><tr><td class="gutter"><pre><span class="line">1</span><br><span class="line">2</span><br><span class="line">3</span><br><span class="line">4</span><br></pre></td><td class="code"><pre><code class="hljs bash">System call number     Function name     entry point     Source code<br>...<br>12            brk       sys_brk    mm/mmap.c<br>...<br></code></pre></td></tr></table></figure>
+<p>上面的程序只跟踪一个系统调用，那么如何跟踪所有的系统调用呢？很简单，就是把被跟踪的代码放到一个无限循环中。代码如下：</p>
+<figure class="highlight bash"><table><tr><td class="gutter"><pre><span class="line">1</span><br><span class="line">2</span><br><span class="line">3</span><br><span class="line">4</span><br><span class="line">5</span><br><span class="line">6</span><br><span class="line">7</span><br><span class="line">8</span><br><span class="line">9</span><br><span class="line">10</span><br><span class="line">11</span><br><span class="line">12</span><br><span class="line">13</span><br><span class="line">14</span><br><span class="line">15</span><br><span class="line">16</span><br><span class="line">17</span><br><span class="line">18</span><br><span class="line">19</span><br><span class="line">20</span><br><span class="line">21</span><br><span class="line">22</span><br><span class="line">23</span><br><span class="line">24</span><br><span class="line">25</span><br><span class="line">26</span><br><span class="line">27</span><br><span class="line">28</span><br><span class="line">29</span><br><span class="line">30</span><br><span class="line">31</span><br><span class="line">32</span><br><span class="line">33</span><br><span class="line">34</span><br><span class="line">35</span><br><span class="line">36</span><br><span class="line">37</span><br><span class="line">38</span><br><span class="line">39</span><br><span class="line">40</span><br><span class="line">41</span><br><span class="line">42</span><br><span class="line">43</span><br><span class="line">44</span><br><span class="line">45</span><br><span class="line">46</span><br><span class="line">47</span><br><span class="line">48</span><br></pre></td><td class="code"><pre><code class="hljs bash"><span class="hljs-comment">#include &lt;sys/ptrace.h&gt;</span><br><span class="hljs-comment">#include &lt;sys/user.h&gt;</span><br><span class="hljs-comment">#include &lt;unistd.h&gt;</span><br><span class="hljs-comment">#include &lt;stdlib.h&gt;</span><br><span class="hljs-comment">#include &lt;stdio.h&gt;</span><br><br>int main(int argc, char *argv[])<br>&#123;<br>    pid_t child;<br>    int status;<br>    struct user_regs_struct regs;<br>    int orig_rax;<br><br>    child = fork();<br>    <span class="hljs-keyword">if</span> (child == 0) &#123;<br>        ptrace(PTRACE_TRACEME, 0, NULL, NULL);<br>        execl(<span class="hljs-string">&quot;/bin/ls&quot;</span>, <span class="hljs-string">&quot;/bin/ls&quot;</span>, NULL);<br>        <span class="hljs-built_in">exit</span>(0);<br>    &#125; <span class="hljs-keyword">else</span> &#123;<br>        <span class="hljs-built_in">wait</span>(&amp;status); // Receive SIGCHLD signal sent by subprocess<br><br>        <span class="hljs-keyword">while</span> (1) &#123;<br>            // 1. Send PTRACE_SYSCALL <span class="hljs-built_in">command</span> is given to the tracked process (parameters of system call can be obtained before calling system call)<br>            ptrace(PTRACE_SYSCALL, child, NULL, NULL);<br><br>            <span class="hljs-built_in">wait</span>(&amp;status); // Receive SIGCHLD signal sent by subprocess<br>            <span class="hljs-keyword">if</span> (WIFEXITED(status)) &#123; // If the child process exits, the trace is terminated<br>                <span class="hljs-built_in">break</span>;<br>            &#125;<br><br>            ptrace(PTRACE_GETREGS, child, 0, &amp;regs); // Gets the value of the tracked process register<br><br>            orig_rax = regs.orig_rax; // Gets the value of the rax register<br><br>            <span class="hljs-built_in">printf</span>(<span class="hljs-string">&quot;orig_rax: %d\n&quot;</span>, orig_rax); // Print the value of the rax register<br><br>            // 2. Send PTRACE_SYSCALL <span class="hljs-built_in">command</span> to the tracked process (after calling the system call, you can get the <span class="hljs-built_in">return</span> value of the system call)<br>            ptrace(PTRACE_SYSCALL, child, NULL, NULL);<br><br>            <span class="hljs-built_in">wait</span>(&amp;status); // Receive SIGCHLD signal sent by subprocess<br>            <span class="hljs-keyword">if</span> (WIFEXITED(status)) &#123; // If the child process exits, the trace is terminated<br>                <span class="hljs-built_in">break</span>;<br>            &#125;<br>        &#125;<br>    &#125;<br><br>    <span class="hljs-built_in">return</span> 0;<br>&#125;<br></code></pre></td></tr></table></figure>
+
+<p>这行代码用于判断子进程（被跟踪的进程）是否退出，如果退出，则停止跟踪。现在您可以编译并运行该程序。输出如下：</p>
+<figure class="highlight bash"><table><tr><td class="gutter"><pre><span class="line">1</span><br><span class="line">2</span><br><span class="line">3</span><br><span class="line">4</span><br><span class="line">5</span><br><span class="line">6</span><br><span class="line">7</span><br><span class="line">8</span><br><span class="line">9</span><br><span class="line">10</span><br><span class="line">11</span><br><span class="line">12</span><br><span class="line">13</span><br><span class="line">14</span><br><span class="line">15</span><br><span class="line">16</span><br><span class="line">17</span><br><span class="line">18</span><br><span class="line">19</span><br><span class="line">20</span><br><span class="line">21</span><br><span class="line">22</span><br></pre></td><td class="code"><pre><code class="hljs bash">[root@localhost liexusong]$ ./strace<br>orig_rax: 12<br>orig_rax: 9<br>orig_rax: 21<br>orig_rax: 2<br>orig_rax: 5<br>orig_rax: 9<br>orig_rax: 3<br>orig_rax: 2<br>orig_rax: 0<br>orig_rax: 5<br>orig_rax: 9<br>orig_rax: 10<br>orig_rax: 9<br>orig_rax: 9<br>orig_rax: 3<br>orig_rax: 2<br>orig_rax: 0<br>orig_rax: 5<br>orig_rax: 9<br>orig_rax: 10<br>...<br></code></pre></td></tr></table></figure>
+
+<p>从执行结果来看，只是打印系统调用号不直观，那我们该如何优化呢？</p>
+<p>我们可以定义一个系统调用号和系统调用名的对应表来实现更清晰的输出结果，如下：</p>
+<figure class="highlight bash"><table><tr><td class="gutter"><pre><span class="line">1</span><br><span class="line">2</span><br><span class="line">3</span><br><span class="line">4</span><br><span class="line">5</span><br><span class="line">6</span><br><span class="line">7</span><br><span class="line">8</span><br><span class="line">9</span><br><span class="line">10</span><br><span class="line">11</span><br><span class="line">12</span><br><span class="line">13</span><br><span class="line">14</span><br><span class="line">15</span><br><span class="line">16</span><br><span class="line">17</span><br><span class="line">18</span><br><span class="line">19</span><br><span class="line">20</span><br><span class="line">21</span><br><span class="line">22</span><br><span class="line">23</span><br><span class="line">24</span><br><span class="line">25</span><br><span class="line">26</span><br><span class="line">27</span><br><span class="line">28</span><br><span class="line">29</span><br><span class="line">30</span><br><span class="line">31</span><br><span class="line">32</span><br><span class="line">33</span><br><span class="line">34</span><br><span class="line">35</span><br><span class="line">36</span><br><span class="line">37</span><br><span class="line">38</span><br><span class="line">39</span><br><span class="line">40</span><br><span class="line">41</span><br><span class="line">42</span><br><span class="line">43</span><br><span class="line">44</span><br><span class="line">45</span><br><span class="line">46</span><br><span class="line">47</span><br><span class="line">48</span><br><span class="line">49</span><br><span class="line">50</span><br><span class="line">51</span><br><span class="line">52</span><br><span class="line">53</span><br><span class="line">54</span><br><span class="line">55</span><br><span class="line">56</span><br><span class="line">57</span><br><span class="line">58</span><br><span class="line">59</span><br><span class="line">60</span><br><span class="line">61</span><br><span class="line">62</span><br><span class="line">63</span><br><span class="line">64</span><br><span class="line">65</span><br><span class="line">66</span><br><span class="line">67</span><br><span class="line">68</span><br><span class="line">69</span><br><span class="line">70</span><br><span class="line">71</span><br><span class="line">72</span><br><span class="line">73</span><br><span class="line">74</span><br><span class="line">75</span><br><span class="line">76</span><br><span class="line">77</span><br></pre></td><td class="code"><pre><code class="hljs bash"><span class="hljs-comment">#include &lt;sys/ptrace.h&gt;</span><br><span class="hljs-comment">#include &lt;sys/user.h&gt;</span><br><span class="hljs-comment">#include &lt;unistd.h&gt;</span><br><span class="hljs-comment">#include &lt;stdlib.h&gt;</span><br><span class="hljs-comment">#include &lt;stdio.h&gt;</span><br><br>struct syscall &#123;<br>    int  code;<br>    char *name;<br>&#125; syscall_table[] = &#123;<br>    &#123;0, <span class="hljs-string">&quot;read&quot;</span>&#125;,<br>    &#123;1, <span class="hljs-string">&quot;write&quot;</span>&#125;,<br>    &#123;2, <span class="hljs-string">&quot;open&quot;</span>&#125;,<br>    &#123;3, <span class="hljs-string">&quot;close&quot;</span>&#125;,<br>    &#123;4, <span class="hljs-string">&quot;stat&quot;</span>&#125;,<br>    &#123;5, <span class="hljs-string">&quot;fstat&quot;</span>&#125;,<br>    &#123;6, <span class="hljs-string">&quot;lstat&quot;</span>&#125;,<br>    &#123;7, <span class="hljs-string">&quot;poll&quot;</span>&#125;,<br>    &#123;8, <span class="hljs-string">&quot;lseek&quot;</span>&#125;,<br>    ...<br>    &#123;-1, NULL&#125;,<br>&#125;<br><br>char *find_syscall_symbol(int code) &#123;<br>    struct syscall *sc;<br><br>    <span class="hljs-keyword">for</span> (sc = syscall_table; sc-&gt;code &gt;= 0; sc++) &#123;<br>        <span class="hljs-keyword">if</span> (sc-&gt;code == code) &#123;<br>            <span class="hljs-built_in">return</span> sc-&gt;name;<br>        &#125;<br>    &#125;<br><br>    <span class="hljs-built_in">return</span> NULL;<br>&#125;<br><br>int main(int argc, char *argv[])<br>&#123;<br>    pid_t child;<br>    int status;<br>    struct user_regs_struct regs;<br>    int orig_rax;<br><br>    child = fork();<br>    <span class="hljs-keyword">if</span> (child == 0) &#123;<br>        ptrace(PTRACE_TRACEME, 0, NULL, NULL);<br>        execl(<span class="hljs-string">&quot;/bin/ls&quot;</span>, <span class="hljs-string">&quot;/bin/ls&quot;</span>, NULL);<br>        <span class="hljs-built_in">exit</span>(0);<br>    &#125; <span class="hljs-keyword">else</span> &#123;<br>        <span class="hljs-built_in">wait</span>(&amp;status); // Receive SIGCHLD signal sent by subprocess<br><br>        <span class="hljs-keyword">while</span> (1) &#123;<br>            // 1. Send PTRACE_SYSCALL <span class="hljs-built_in">command</span> is given to the tracked process (parameters of system call can be obtained before calling system call)<br>            ptrace(PTRACE_SYSCALL, child, NULL, NULL);<br><br>            <span class="hljs-built_in">wait</span>(&amp;status); // Receive SIGCHLD signal sent by subprocess<br>            <span class="hljs-keyword">if</span>(WIFEXITED(status)) &#123; // If the child process exits, the trace is terminated<br>                <span class="hljs-built_in">break</span>;<br>            &#125;<br><br>            ptrace(PTRACE_GETREGS, child, 0, &amp;regs); // Gets the value of the tracked process register<br><br>            orig_rax = regs.orig_rax; // Gets the value of the rax register<br><br>            <span class="hljs-built_in">printf</span>(<span class="hljs-string">&quot;syscall: %s()\n&quot;</span>, find_syscall_symbol(orig_rax)); // Print system call<br><br>            // 2. Send PTRACE_SYSCALL <span class="hljs-built_in">command</span> to the tracked process (after calling the system call, you can get the <span class="hljs-built_in">return</span> value of the system call)<br>            ptrace(PTRACE_SYSCALL, child, NULL, NULL);<br><br>            <span class="hljs-built_in">wait</span>(&amp;status); // Receive SIGCHLD signal sent by subprocess<br>            <span class="hljs-keyword">if</span>(WIFEXITED(status)) &#123; // If the child process is terminated, <span class="hljs-keyword">then</span><br>                <span class="hljs-built_in">break</span>;<br>            &#125;<br>        &#125;<br>    &#125;<br><br>    <span class="hljs-built_in">return</span> 0;<br>&#125;<br></code></pre></td></tr></table></figure>
+
+<p>上面的例子增加了一个函数，find_syscall_symbol() 来获取系统调用号对应的系统调用名，实现比较简单。输出结果如下：</p>
+<figure class="highlight bash"><table><tr><td class="gutter"><pre><span class="line">1</span><br><span class="line">2</span><br><span class="line">3</span><br><span class="line">4</span><br><span class="line">5</span><br><span class="line">6</span><br><span class="line">7</span><br><span class="line">8</span><br><span class="line">9</span><br><span class="line">10</span><br><span class="line">11</span><br><span class="line">12</span><br><span class="line">13</span><br><span class="line">14</span><br><span class="line">15</span><br><span class="line">16</span><br><span class="line">17</span><br></pre></td><td class="code"><pre><code class="hljs bash">[root@localhost liexusong]$ ./strace<br>syscall: brk()<br>syscall: mmap()<br>syscall: access()<br>syscall: open()<br>syscall: fstat()<br>syscall: mmap()<br>syscall: close()<br>syscall: open()<br>syscall: <span class="hljs-built_in">read</span>()<br>syscall: fstat()<br>syscall: mmap()<br>syscall: mprotect()<br>syscall: mmap()<br>syscall: mmap()<br>syscall: close()<br>...<br></code></pre></td></tr></table></figure>
+
+<p>从执行结果来看，我们现在可以打印系统调用的名称，但是我们知道 strace 命令也会打印系统调用参数的值。我们可以使用 ptrace() 系统调用 PTRACE_PEEKTEXT 和 PTRACE_PEEKDATA 来获取参数的值，所以有兴趣自己实现这个效果。</p>
+<p>本文完整代码</p>
+<figure class="highlight bash"><table><tr><td class="gutter"><pre><span class="line">1</span><br><span class="line">2</span><br><span class="line">3</span><br><span class="line">4</span><br><span class="line">5</span><br><span class="line">6</span><br><span class="line">7</span><br><span class="line">8</span><br><span class="line">9</span><br><span class="line">10</span><br><span class="line">11</span><br><span class="line">12</span><br><span class="line">13</span><br><span class="line">14</span><br><span class="line">15</span><br><span class="line">16</span><br><span class="line">17</span><br><span class="line">18</span><br><span class="line">19</span><br><span class="line">20</span><br><span class="line">21</span><br><span class="line">22</span><br><span class="line">23</span><br><span class="line">24</span><br><span class="line">25</span><br><span class="line">26</span><br><span class="line">27</span><br><span class="line">28</span><br><span class="line">29</span><br><span class="line">30</span><br><span class="line">31</span><br><span class="line">32</span><br><span class="line">33</span><br><span class="line">34</span><br><span class="line">35</span><br><span class="line">36</span><br><span class="line">37</span><br><span class="line">38</span><br><span class="line">39</span><br><span class="line">40</span><br><span class="line">41</span><br><span class="line">42</span><br><span class="line">43</span><br><span class="line">44</span><br><span class="line">45</span><br><span class="line">46</span><br><span class="line">47</span><br><span class="line">48</span><br><span class="line">49</span><br><span class="line">50</span><br><span class="line">51</span><br><span class="line">52</span><br><span class="line">53</span><br><span class="line">54</span><br><span class="line">55</span><br><span class="line">56</span><br><span class="line">57</span><br><span class="line">58</span><br><span class="line">59</span><br><span class="line">60</span><br><span class="line">61</span><br><span class="line">62</span><br><span class="line">63</span><br><span class="line">64</span><br><span class="line">65</span><br><span class="line">66</span><br><span class="line">67</span><br><span class="line">68</span><br><span class="line">69</span><br><span class="line">70</span><br><span class="line">71</span><br><span class="line">72</span><br><span class="line">73</span><br><span class="line">74</span><br><span class="line">75</span><br><span class="line">76</span><br><span class="line">77</span><br><span class="line">78</span><br><span class="line">79</span><br><span class="line">80</span><br><span class="line">81</span><br><span class="line">82</span><br><span class="line">83</span><br><span class="line">84</span><br><span class="line">85</span><br><span class="line">86</span><br><span class="line">87</span><br><span class="line">88</span><br><span class="line">89</span><br><span class="line">90</span><br><span class="line">91</span><br><span class="line">92</span><br><span class="line">93</span><br><span class="line">94</span><br><span class="line">95</span><br><span class="line">96</span><br><span class="line">97</span><br><span class="line">98</span><br><span class="line">99</span><br><span class="line">100</span><br><span class="line">101</span><br><span class="line">102</span><br><span class="line">103</span><br><span class="line">104</span><br><span class="line">105</span><br><span class="line">106</span><br><span class="line">107</span><br><span class="line">108</span><br><span class="line">109</span><br><span class="line">110</span><br><span class="line">111</span><br><span class="line">112</span><br><span class="line">113</span><br><span class="line">114</span><br><span class="line">115</span><br><span class="line">116</span><br><span class="line">117</span><br><span class="line">118</span><br><span class="line">119</span><br><span class="line">120</span><br><span class="line">121</span><br><span class="line">122</span><br><span class="line">123</span><br><span class="line">124</span><br><span class="line">125</span><br><span class="line">126</span><br><span class="line">127</span><br><span class="line">128</span><br><span class="line">129</span><br><span class="line">130</span><br><span class="line">131</span><br><span class="line">132</span><br><span class="line">133</span><br><span class="line">134</span><br><span class="line">135</span><br><span class="line">136</span><br><span class="line">137</span><br><span class="line">138</span><br><span class="line">139</span><br><span class="line">140</span><br><span class="line">141</span><br><span class="line">142</span><br><span class="line">143</span><br><span class="line">144</span><br><span class="line">145</span><br><span class="line">146</span><br><span class="line">147</span><br><span class="line">148</span><br><span class="line">149</span><br><span class="line">150</span><br><span class="line">151</span><br><span class="line">152</span><br><span class="line">153</span><br><span class="line">154</span><br><span class="line">155</span><br><span class="line">156</span><br><span class="line">157</span><br><span class="line">158</span><br><span class="line">159</span><br><span class="line">160</span><br><span class="line">161</span><br><span class="line">162</span><br><span class="line">163</span><br><span class="line">164</span><br><span class="line">165</span><br><span class="line">166</span><br><span class="line">167</span><br><span class="line">168</span><br><span class="line">169</span><br><span class="line">170</span><br><span class="line">171</span><br><span class="line">172</span><br><span class="line">173</span><br><span class="line">174</span><br><span class="line">175</span><br><span class="line">176</span><br><span class="line">177</span><br><span class="line">178</span><br><span class="line">179</span><br><span class="line">180</span><br><span class="line">181</span><br><span class="line">182</span><br><span class="line">183</span><br><span class="line">184</span><br><span class="line">185</span><br><span class="line">186</span><br><span class="line">187</span><br><span class="line">188</span><br><span class="line">189</span><br><span class="line">190</span><br><span class="line">191</span><br><span class="line">192</span><br><span class="line">193</span><br><span class="line">194</span><br><span class="line">195</span><br><span class="line">196</span><br><span class="line">197</span><br><span class="line">198</span><br><span class="line">199</span><br><span class="line">200</span><br><span class="line">201</span><br><span class="line">202</span><br><span class="line">203</span><br><span class="line">204</span><br><span class="line">205</span><br><span class="line">206</span><br><span class="line">207</span><br><span class="line">208</span><br><span class="line">209</span><br><span class="line">210</span><br><span class="line">211</span><br><span class="line">212</span><br><span class="line">213</span><br><span class="line">214</span><br><span class="line">215</span><br><span class="line">216</span><br><span class="line">217</span><br><span class="line">218</span><br><span class="line">219</span><br><span class="line">220</span><br><span class="line">221</span><br><span class="line">222</span><br><span class="line">223</span><br><span class="line">224</span><br><span class="line">225</span><br><span class="line">226</span><br><span class="line">227</span><br><span class="line">228</span><br><span class="line">229</span><br><span class="line">230</span><br><span class="line">231</span><br><span class="line">232</span><br><span class="line">233</span><br><span class="line">234</span><br><span class="line">235</span><br><span class="line">236</span><br><span class="line">237</span><br><span class="line">238</span><br><span class="line">239</span><br><span class="line">240</span><br><span class="line">241</span><br><span class="line">242</span><br><span class="line">243</span><br><span class="line">244</span><br><span class="line">245</span><br><span class="line">246</span><br><span class="line">247</span><br><span class="line">248</span><br><span class="line">249</span><br><span class="line">250</span><br><span class="line">251</span><br><span class="line">252</span><br><span class="line">253</span><br><span class="line">254</span><br><span class="line">255</span><br><span class="line">256</span><br><span class="line">257</span><br><span class="line">258</span><br><span class="line">259</span><br><span class="line">260</span><br><span class="line">261</span><br><span class="line">262</span><br><span class="line">263</span><br><span class="line">264</span><br><span class="line">265</span><br><span class="line">266</span><br><span class="line">267</span><br><span class="line">268</span><br><span class="line">269</span><br><span class="line">270</span><br><span class="line">271</span><br><span class="line">272</span><br><span class="line">273</span><br><span class="line">274</span><br><span class="line">275</span><br><span class="line">276</span><br><span class="line">277</span><br><span class="line">278</span><br><span class="line">279</span><br><span class="line">280</span><br><span class="line">281</span><br><span class="line">282</span><br><span class="line">283</span><br><span class="line">284</span><br><span class="line">285</span><br><span class="line">286</span><br><span class="line">287</span><br><span class="line">288</span><br><span class="line">289</span><br><span class="line">290</span><br><span class="line">291</span><br><span class="line">292</span><br><span class="line">293</span><br><span class="line">294</span><br><span class="line">295</span><br><span class="line">296</span><br><span class="line">297</span><br><span class="line">298</span><br><span class="line">299</span><br><span class="line">300</span><br><span class="line">301</span><br><span class="line">302</span><br><span class="line">303</span><br><span class="line">304</span><br><span class="line">305</span><br><span class="line">306</span><br><span class="line">307</span><br><span class="line">308</span><br><span class="line">309</span><br><span class="line">310</span><br><span class="line">311</span><br><span class="line">312</span><br><span class="line">313</span><br><span class="line">314</span><br><span class="line">315</span><br><span class="line">316</span><br><span class="line">317</span><br><span class="line">318</span><br><span class="line">319</span><br><span class="line">320</span><br><span class="line">321</span><br><span class="line">322</span><br><span class="line">323</span><br><span class="line">324</span><br><span class="line">325</span><br><span class="line">326</span><br><span class="line">327</span><br><span class="line">328</span><br><span class="line">329</span><br><span class="line">330</span><br><span class="line">331</span><br><span class="line">332</span><br><span class="line">333</span><br><span class="line">334</span><br><span class="line">335</span><br><span class="line">336</span><br><span class="line">337</span><br><span class="line">338</span><br><span class="line">339</span><br><span class="line">340</span><br><span class="line">341</span><br><span class="line">342</span><br><span class="line">343</span><br><span class="line">344</span><br><span class="line">345</span><br><span class="line">346</span><br><span class="line">347</span><br><span class="line">348</span><br><span class="line">349</span><br><span class="line">350</span><br><span class="line">351</span><br><span class="line">352</span><br><span class="line">353</span><br><span class="line">354</span><br><span class="line">355</span><br><span class="line">356</span><br><span class="line">357</span><br><span class="line">358</span><br><span class="line">359</span><br><span class="line">360</span><br><span class="line">361</span><br><span class="line">362</span><br><span class="line">363</span><br><span class="line">364</span><br><span class="line">365</span><br><span class="line">366</span><br><span class="line">367</span><br><span class="line">368</span><br><span class="line">369</span><br><span class="line">370</span><br><span class="line">371</span><br><span class="line">372</span><br><span class="line">373</span><br><span class="line">374</span><br><span class="line">375</span><br><span class="line">376</span><br><span class="line">377</span><br><span class="line">378</span><br><span class="line">379</span><br><span class="line">380</span><br><span class="line">381</span><br><span class="line">382</span><br><span class="line">383</span><br><span class="line">384</span><br><span class="line">385</span><br><span class="line">386</span><br><span class="line">387</span><br><span class="line">388</span><br><span class="line">389</span><br><span class="line">390</span><br><span class="line">391</span><br><span class="line">392</span><br><span class="line">393</span><br><span class="line">394</span><br><span class="line">395</span><br><span class="line">396</span><br><span class="line">397</span><br><span class="line">398</span><br><span class="line">399</span><br><span class="line">400</span><br><span class="line">401</span><br><span class="line">402</span><br><span class="line">403</span><br><span class="line">404</span><br><span class="line">405</span><br><span class="line">406</span><br><span class="line">407</span><br><span class="line">408</span><br><span class="line">409</span><br><span class="line">410</span><br><span class="line">411</span><br><span class="line">412</span><br><span class="line">413</span><br><span class="line">414</span><br><span class="line">415</span><br><span class="line">416</span><br><span class="line">417</span><br><span class="line">418</span><br><span class="line">419</span><br><span class="line">420</span><br><span class="line">421</span><br><span class="line">422</span><br><span class="line">423</span><br><span class="line">424</span><br><span class="line">425</span><br><span class="line">426</span><br><span class="line">427</span><br><span class="line">428</span><br><span class="line">429</span><br><span class="line">430</span><br><span class="line">431</span><br><span class="line">432</span><br><span class="line">433</span><br><span class="line">434</span><br><span class="line">435</span><br><span class="line">436</span><br><span class="line">437</span><br><span class="line">438</span><br><span class="line">439</span><br><span class="line">440</span><br><span class="line">441</span><br><span class="line">442</span><br><span class="line">443</span><br><span class="line">444</span><br><span class="line">445</span><br><span class="line">446</span><br><span class="line">447</span><br><span class="line">448</span><br><span class="line">449</span><br><span class="line">450</span><br><span class="line">451</span><br><span class="line">452</span><br><span class="line">453</span><br><span class="line">454</span><br><span class="line">455</span><br></pre></td><td class="code"><pre><code class="hljs bash"><span class="hljs-comment">#include &lt;sys/ptrace.h&gt;</span><br><span class="hljs-comment">#include &lt;sys/user.h&gt;</span><br><span class="hljs-comment">#include &lt;unistd.h&gt;</span><br><span class="hljs-comment">#include &lt;stdlib.h&gt;</span><br><span class="hljs-comment">#include &lt;stdio.h&gt;</span><br><br>struct syscall &#123;<br>    int  code;<br>    char *name;<br>&#125; syscall_table[] = &#123;<br>    &#123;0, <span class="hljs-string">&quot;read&quot;</span>&#125;,<br>    &#123;1, <span class="hljs-string">&quot;write&quot;</span>&#125;,<br>    &#123;2, <span class="hljs-string">&quot;open&quot;</span>&#125;,<br>    &#123;3, <span class="hljs-string">&quot;close&quot;</span>&#125;,<br>    &#123;4, <span class="hljs-string">&quot;stat&quot;</span>&#125;,<br>    &#123;5, <span class="hljs-string">&quot;fstat&quot;</span>&#125;,<br>    &#123;6, <span class="hljs-string">&quot;lstat&quot;</span>&#125;,<br>    &#123;7, <span class="hljs-string">&quot;poll&quot;</span>&#125;,<br>    &#123;8, <span class="hljs-string">&quot;lseek&quot;</span>&#125;,<br>    &#123;9, <span class="hljs-string">&quot;mmap&quot;</span>&#125;,<br>    &#123;10, <span class="hljs-string">&quot;mprotect&quot;</span>&#125;,<br>    &#123;11, <span class="hljs-string">&quot;munmap&quot;</span>&#125;,<br>    &#123;12, <span class="hljs-string">&quot;brk&quot;</span>&#125;,<br>    &#123;13, <span class="hljs-string">&quot;rt_sigaction&quot;</span>&#125;,<br>    &#123;14, <span class="hljs-string">&quot;rt_sigprocmask&quot;</span>&#125;,<br>    &#123;15, <span class="hljs-string">&quot;rt_sigreturn&quot;</span>&#125;,<br>    &#123;16, <span class="hljs-string">&quot;ioctl&quot;</span>&#125;,<br>    &#123;17, <span class="hljs-string">&quot;pread64&quot;</span>&#125;,<br>    &#123;18, <span class="hljs-string">&quot;pwrite64&quot;</span>&#125;,<br>    &#123;19, <span class="hljs-string">&quot;readv&quot;</span>&#125;,<br>    &#123;20, <span class="hljs-string">&quot;writev&quot;</span>&#125;,<br>    &#123;21, <span class="hljs-string">&quot;access&quot;</span>&#125;,<br>    &#123;22, <span class="hljs-string">&quot;pipe&quot;</span>&#125;,<br>    &#123;23, <span class="hljs-string">&quot;select&quot;</span>&#125;,<br>    &#123;24, <span class="hljs-string">&quot;sched_yield&quot;</span>&#125;,<br>    &#123;25, <span class="hljs-string">&quot;mremap&quot;</span>&#125;,<br>    &#123;26, <span class="hljs-string">&quot;msync&quot;</span>&#125;,<br>    &#123;27, <span class="hljs-string">&quot;mincore&quot;</span>&#125;,<br>    &#123;28, <span class="hljs-string">&quot;madvise&quot;</span>&#125;,<br>    &#123;29, <span class="hljs-string">&quot;shmget&quot;</span>&#125;,<br>    &#123;30, <span class="hljs-string">&quot;shmat&quot;</span>&#125;,<br>    &#123;31, <span class="hljs-string">&quot;shmctl&quot;</span>&#125;,<br>    &#123;32, <span class="hljs-string">&quot;dup&quot;</span>&#125;,<br>    &#123;33, <span class="hljs-string">&quot;dup2&quot;</span>&#125;,<br>    &#123;34, <span class="hljs-string">&quot;pause&quot;</span>&#125;,<br>    &#123;35, <span class="hljs-string">&quot;nanosleep&quot;</span>&#125;,<br>    &#123;36, <span class="hljs-string">&quot;getitimer&quot;</span>&#125;,<br>    &#123;37, <span class="hljs-string">&quot;alarm&quot;</span>&#125;,<br>    &#123;38, <span class="hljs-string">&quot;setitimer&quot;</span>&#125;,<br>    &#123;39, <span class="hljs-string">&quot;getpid&quot;</span>&#125;,<br>    &#123;40, <span class="hljs-string">&quot;sendfile&quot;</span>&#125;,<br>    &#123;41, <span class="hljs-string">&quot;socket&quot;</span>&#125;,<br>    &#123;42, <span class="hljs-string">&quot;connect&quot;</span>&#125;,<br>    &#123;43, <span class="hljs-string">&quot;accept&quot;</span>&#125;,<br>    &#123;44, <span class="hljs-string">&quot;sendto&quot;</span>&#125;,<br>    &#123;45, <span class="hljs-string">&quot;recvfrom&quot;</span>&#125;,<br>    &#123;46, <span class="hljs-string">&quot;sendmsg&quot;</span>&#125;,<br>    &#123;47, <span class="hljs-string">&quot;recvmsg&quot;</span>&#125;,<br>    &#123;48, <span class="hljs-string">&quot;shutdown&quot;</span>&#125;,<br>    &#123;49, <span class="hljs-string">&quot;bind&quot;</span>&#125;,<br>    &#123;50, <span class="hljs-string">&quot;listen&quot;</span>&#125;,<br>    &#123;51, <span class="hljs-string">&quot;getsockname&quot;</span>&#125;,<br>    &#123;52, <span class="hljs-string">&quot;getpeername&quot;</span>&#125;,<br>    &#123;53, <span class="hljs-string">&quot;socketpair&quot;</span>&#125;,<br>    &#123;54, <span class="hljs-string">&quot;setsockopt&quot;</span>&#125;,<br>    &#123;55, <span class="hljs-string">&quot;getsockopt&quot;</span>&#125;,<br>    &#123;56, <span class="hljs-string">&quot;clone&quot;</span>&#125;,<br>    &#123;57, <span class="hljs-string">&quot;fork&quot;</span>&#125;,<br>    &#123;58, <span class="hljs-string">&quot;vfork&quot;</span>&#125;,<br>    &#123;59, <span class="hljs-string">&quot;execve&quot;</span>&#125;,<br>    &#123;60, <span class="hljs-string">&quot;exit&quot;</span>&#125;,<br>    &#123;61, <span class="hljs-string">&quot;wait4&quot;</span>&#125;,<br>    &#123;62, <span class="hljs-string">&quot;kill&quot;</span>&#125;,<br>    &#123;63, <span class="hljs-string">&quot;uname&quot;</span>&#125;,<br>    &#123;64, <span class="hljs-string">&quot;semget&quot;</span>&#125;,<br>    &#123;65, <span class="hljs-string">&quot;semop&quot;</span>&#125;,<br>    &#123;66, <span class="hljs-string">&quot;semctl&quot;</span>&#125;,<br>    &#123;67, <span class="hljs-string">&quot;shmdt&quot;</span>&#125;,<br>    &#123;68, <span class="hljs-string">&quot;msgget&quot;</span>&#125;,<br>    &#123;69, <span class="hljs-string">&quot;msgsnd&quot;</span>&#125;,<br>    &#123;70, <span class="hljs-string">&quot;msgrcv&quot;</span>&#125;,<br>    &#123;71, <span class="hljs-string">&quot;msgctl&quot;</span>&#125;,<br>    &#123;72, <span class="hljs-string">&quot;fcntl&quot;</span>&#125;,<br>    &#123;73, <span class="hljs-string">&quot;flock&quot;</span>&#125;,<br>    &#123;74, <span class="hljs-string">&quot;fsync&quot;</span>&#125;,<br>    &#123;75, <span class="hljs-string">&quot;fdatasync&quot;</span>&#125;,<br>    &#123;76, <span class="hljs-string">&quot;truncate&quot;</span>&#125;,<br>    &#123;77, <span class="hljs-string">&quot;ftruncate&quot;</span>&#125;,<br>    &#123;78, <span class="hljs-string">&quot;getdents&quot;</span>&#125;,<br>    &#123;79, <span class="hljs-string">&quot;getcwd&quot;</span>&#125;,<br>    &#123;80, <span class="hljs-string">&quot;chdir&quot;</span>&#125;,<br>    &#123;81, <span class="hljs-string">&quot;fchdir&quot;</span>&#125;,<br>    &#123;82, <span class="hljs-string">&quot;rename&quot;</span>&#125;,<br>    &#123;83, <span class="hljs-string">&quot;mkdir&quot;</span>&#125;,<br>    &#123;84, <span class="hljs-string">&quot;rmdir&quot;</span>&#125;,<br>    &#123;85, <span class="hljs-string">&quot;creat&quot;</span>&#125;,<br>    &#123;86, <span class="hljs-string">&quot;link&quot;</span>&#125;,<br>    &#123;87, <span class="hljs-string">&quot;unlink&quot;</span>&#125;,<br>    &#123;88, <span class="hljs-string">&quot;symlink&quot;</span>&#125;,<br>    &#123;89, <span class="hljs-string">&quot;readlink&quot;</span>&#125;,<br>    &#123;90, <span class="hljs-string">&quot;chmod&quot;</span>&#125;,<br>    &#123;91, <span class="hljs-string">&quot;fchmod&quot;</span>&#125;,<br>    &#123;92, <span class="hljs-string">&quot;chown&quot;</span>&#125;,<br>    &#123;93, <span class="hljs-string">&quot;fchown&quot;</span>&#125;,<br>    &#123;94, <span class="hljs-string">&quot;lchown&quot;</span>&#125;,<br>    &#123;95, <span class="hljs-string">&quot;umask&quot;</span>&#125;,<br>    &#123;96, <span class="hljs-string">&quot;gettimeofday&quot;</span>&#125;,<br>    &#123;97, <span class="hljs-string">&quot;getrlimit&quot;</span>&#125;,<br>    &#123;98, <span class="hljs-string">&quot;getrusage&quot;</span>&#125;,<br>    &#123;99, <span class="hljs-string">&quot;sysinfo&quot;</span>&#125;,<br>    &#123;100, <span class="hljs-string">&quot;times&quot;</span>&#125;,<br>    &#123;101, <span class="hljs-string">&quot;ptrace&quot;</span>&#125;,<br>    &#123;102, <span class="hljs-string">&quot;getuid&quot;</span>&#125;,<br>    &#123;103, <span class="hljs-string">&quot;syslog&quot;</span>&#125;,<br>    &#123;104, <span class="hljs-string">&quot;getgid&quot;</span>&#125;,<br>    &#123;105, <span class="hljs-string">&quot;setuid&quot;</span>&#125;,<br>    &#123;106, <span class="hljs-string">&quot;setgid&quot;</span>&#125;,<br>    &#123;107, <span class="hljs-string">&quot;geteuid&quot;</span>&#125;,<br>    &#123;108, <span class="hljs-string">&quot;getegid&quot;</span>&#125;,<br>    &#123;109, <span class="hljs-string">&quot;setpgid&quot;</span>&#125;,<br>    &#123;110, <span class="hljs-string">&quot;getppid&quot;</span>&#125;,<br>    &#123;111, <span class="hljs-string">&quot;getpgrp&quot;</span>&#125;,<br>    &#123;112, <span class="hljs-string">&quot;setsid&quot;</span>&#125;,<br>    &#123;113, <span class="hljs-string">&quot;setreuid&quot;</span>&#125;,<br>    &#123;114, <span class="hljs-string">&quot;setregid&quot;</span>&#125;,<br>    &#123;115, <span class="hljs-string">&quot;getgroups&quot;</span>&#125;,<br>    &#123;116, <span class="hljs-string">&quot;setgroups&quot;</span>&#125;,<br>    &#123;117, <span class="hljs-string">&quot;setresuid&quot;</span>&#125;,<br>    &#123;118, <span class="hljs-string">&quot;getresuid&quot;</span>&#125;,<br>    &#123;119, <span class="hljs-string">&quot;setresgid&quot;</span>&#125;,<br>    &#123;120, <span class="hljs-string">&quot;getresgid&quot;</span>&#125;,<br>    &#123;121, <span class="hljs-string">&quot;getpgid&quot;</span>&#125;,<br>    &#123;122, <span class="hljs-string">&quot;setfsuid&quot;</span>&#125;,<br>    &#123;123, <span class="hljs-string">&quot;setfsgid&quot;</span>&#125;,<br>    &#123;124, <span class="hljs-string">&quot;getsid&quot;</span>&#125;,<br>    &#123;125, <span class="hljs-string">&quot;capget&quot;</span>&#125;,<br>    &#123;126, <span class="hljs-string">&quot;capset&quot;</span>&#125;,<br>    &#123;127, <span class="hljs-string">&quot;rt_sigpending&quot;</span>&#125;,<br>    &#123;128, <span class="hljs-string">&quot;rt_sigtimedwait&quot;</span>&#125;,<br>    &#123;129, <span class="hljs-string">&quot;rt_sigqueueinfo&quot;</span>&#125;,<br>    &#123;130, <span class="hljs-string">&quot;rt_sigsuspend&quot;</span>&#125;,<br>    &#123;131, <span class="hljs-string">&quot;sigaltstack&quot;</span>&#125;,<br>    &#123;132, <span class="hljs-string">&quot;utime&quot;</span>&#125;,<br>    &#123;133, <span class="hljs-string">&quot;mknod&quot;</span>&#125;,<br>    &#123;134, <span class="hljs-string">&quot;uselib&quot;</span>&#125;,<br>    &#123;135, <span class="hljs-string">&quot;personality&quot;</span>&#125;,<br>    &#123;136, <span class="hljs-string">&quot;ustat&quot;</span>&#125;,<br>    &#123;137, <span class="hljs-string">&quot;statfs&quot;</span>&#125;,<br>    &#123;138, <span class="hljs-string">&quot;fstatfs&quot;</span>&#125;,<br>    &#123;139, <span class="hljs-string">&quot;sysfs&quot;</span>&#125;,<br>    &#123;140, <span class="hljs-string">&quot;getpriority&quot;</span>&#125;,<br>    &#123;141, <span class="hljs-string">&quot;setpriority&quot;</span>&#125;,<br>    &#123;142, <span class="hljs-string">&quot;sched_setparam&quot;</span>&#125;,<br>    &#123;143, <span class="hljs-string">&quot;sched_getparam&quot;</span>&#125;,<br>    &#123;144, <span class="hljs-string">&quot;sched_setscheduler&quot;</span>&#125;,<br>    &#123;145, <span class="hljs-string">&quot;sched_getscheduler&quot;</span>&#125;,<br>    &#123;146, <span class="hljs-string">&quot;sched_get_priority_max&quot;</span>&#125;,<br>    &#123;147, <span class="hljs-string">&quot;sched_get_priority_min&quot;</span>&#125;,<br>    &#123;148, <span class="hljs-string">&quot;sched_rr_get_interval&quot;</span>&#125;,<br>    &#123;149, <span class="hljs-string">&quot;mlock&quot;</span>&#125;,<br>    &#123;150, <span class="hljs-string">&quot;munlock&quot;</span>&#125;,<br>    &#123;151, <span class="hljs-string">&quot;mlockall&quot;</span>&#125;,<br>    &#123;152, <span class="hljs-string">&quot;munlockall&quot;</span>&#125;,<br>    &#123;153, <span class="hljs-string">&quot;vhangup&quot;</span>&#125;,<br>    &#123;154, <span class="hljs-string">&quot;modify_ldt&quot;</span>&#125;,<br>    &#123;155, <span class="hljs-string">&quot;pivot_root&quot;</span>&#125;,<br>    &#123;156, <span class="hljs-string">&quot;_sysctl&quot;</span>&#125;,<br>    &#123;157, <span class="hljs-string">&quot;prctl&quot;</span>&#125;,<br>    &#123;158, <span class="hljs-string">&quot;arch_prctl&quot;</span>&#125;,<br>    &#123;159, <span class="hljs-string">&quot;adjtimex&quot;</span>&#125;,<br>    &#123;160, <span class="hljs-string">&quot;setrlimit&quot;</span>&#125;,<br>    &#123;161, <span class="hljs-string">&quot;chroot&quot;</span>&#125;,<br>    &#123;162, <span class="hljs-string">&quot;sync&quot;</span>&#125;,<br>    &#123;163, <span class="hljs-string">&quot;acct&quot;</span>&#125;,<br>    &#123;164, <span class="hljs-string">&quot;settimeofday&quot;</span>&#125;,<br>    &#123;165, <span class="hljs-string">&quot;mount&quot;</span>&#125;,<br>    &#123;166, <span class="hljs-string">&quot;umount2&quot;</span>&#125;,<br>    &#123;167, <span class="hljs-string">&quot;swapon&quot;</span>&#125;,<br>    &#123;168, <span class="hljs-string">&quot;swapoff&quot;</span>&#125;,<br>    &#123;169, <span class="hljs-string">&quot;reboot&quot;</span>&#125;,<br>    &#123;170, <span class="hljs-string">&quot;sethostname&quot;</span>&#125;,<br>    &#123;171, <span class="hljs-string">&quot;setdomainname&quot;</span>&#125;,<br>    &#123;172, <span class="hljs-string">&quot;iopl&quot;</span>&#125;,<br>    &#123;173, <span class="hljs-string">&quot;ioperm&quot;</span>&#125;,<br>    &#123;174, <span class="hljs-string">&quot;create_module&quot;</span>&#125;,<br>    &#123;175, <span class="hljs-string">&quot;init_module&quot;</span>&#125;,<br>    &#123;176, <span class="hljs-string">&quot;delete_module&quot;</span>&#125;,<br>    &#123;177, <span class="hljs-string">&quot;get_kernel_syms&quot;</span>&#125;,<br>    &#123;178, <span class="hljs-string">&quot;query_module&quot;</span>&#125;,<br>    &#123;179, <span class="hljs-string">&quot;quotactl&quot;</span>&#125;,<br>    &#123;180, <span class="hljs-string">&quot;nfsservctl&quot;</span>&#125;,<br>    &#123;181, <span class="hljs-string">&quot;getpmsg&quot;</span>&#125;,<br>    &#123;182, <span class="hljs-string">&quot;putpmsg&quot;</span>&#125;,<br>    &#123;183, <span class="hljs-string">&quot;afs_syscall&quot;</span>&#125;,<br>    &#123;184, <span class="hljs-string">&quot;tuxcall&quot;</span>&#125;,<br>    &#123;185, <span class="hljs-string">&quot;security&quot;</span>&#125;,<br>    &#123;186, <span class="hljs-string">&quot;gettid&quot;</span>&#125;,<br>    &#123;187, <span class="hljs-string">&quot;readahead&quot;</span>&#125;,<br>    &#123;188, <span class="hljs-string">&quot;setxattr&quot;</span>&#125;,<br>    &#123;189, <span class="hljs-string">&quot;lsetxattr&quot;</span>&#125;,<br>    &#123;190, <span class="hljs-string">&quot;fsetxattr&quot;</span>&#125;,<br>    &#123;191, <span class="hljs-string">&quot;getxattr&quot;</span>&#125;,<br>    &#123;192, <span class="hljs-string">&quot;lgetxattr&quot;</span>&#125;,<br>    &#123;193, <span class="hljs-string">&quot;fgetxattr&quot;</span>&#125;,<br>    &#123;194, <span class="hljs-string">&quot;listxattr&quot;</span>&#125;,<br>    &#123;195, <span class="hljs-string">&quot;llistxattr&quot;</span>&#125;,<br>    &#123;196, <span class="hljs-string">&quot;flistxattr&quot;</span>&#125;,<br>    &#123;197, <span class="hljs-string">&quot;removexattr&quot;</span>&#125;,<br>    &#123;198, <span class="hljs-string">&quot;lremovexattr&quot;</span>&#125;,<br>    &#123;199, <span class="hljs-string">&quot;fremovexattr&quot;</span>&#125;,<br>    &#123;200, <span class="hljs-string">&quot;tkill&quot;</span>&#125;,<br>    &#123;201, <span class="hljs-string">&quot;time&quot;</span>&#125;,<br>    &#123;202, <span class="hljs-string">&quot;futex&quot;</span>&#125;,<br>    &#123;203, <span class="hljs-string">&quot;sched_setaffinity&quot;</span>&#125;,<br>    &#123;204, <span class="hljs-string">&quot;sched_getaffinity&quot;</span>&#125;,<br>    &#123;205, <span class="hljs-string">&quot;set_thread_area&quot;</span>&#125;,<br>    &#123;206, <span class="hljs-string">&quot;io_setup&quot;</span>&#125;,<br>    &#123;207, <span class="hljs-string">&quot;io_destroy&quot;</span>&#125;,<br>    &#123;208, <span class="hljs-string">&quot;io_getevents&quot;</span>&#125;,<br>    &#123;209, <span class="hljs-string">&quot;io_submit&quot;</span>&#125;,<br>    &#123;210, <span class="hljs-string">&quot;io_cancel&quot;</span>&#125;,<br>    &#123;211, <span class="hljs-string">&quot;get_thread_area&quot;</span>&#125;,<br>    &#123;212, <span class="hljs-string">&quot;lookup_dcookie&quot;</span>&#125;,<br>    &#123;213, <span class="hljs-string">&quot;epoll_create&quot;</span>&#125;,<br>    &#123;214, <span class="hljs-string">&quot;epoll_ctl_old&quot;</span>&#125;,<br>    &#123;215, <span class="hljs-string">&quot;epoll_wait_old&quot;</span>&#125;,<br>    &#123;216, <span class="hljs-string">&quot;remap_file_pages&quot;</span>&#125;,<br>    &#123;217, <span class="hljs-string">&quot;getdents64&quot;</span>&#125;,<br>    &#123;218, <span class="hljs-string">&quot;set_tid_address&quot;</span>&#125;,<br>    &#123;219, <span class="hljs-string">&quot;restart_syscall&quot;</span>&#125;,<br>    &#123;220, <span class="hljs-string">&quot;semtimedop&quot;</span>&#125;,<br>    &#123;221, <span class="hljs-string">&quot;fadvise64&quot;</span>&#125;,<br>    &#123;222, <span class="hljs-string">&quot;timer_create&quot;</span>&#125;,<br>    &#123;223, <span class="hljs-string">&quot;timer_settime&quot;</span>&#125;,<br>    &#123;224, <span class="hljs-string">&quot;timer_gettime&quot;</span>&#125;,<br>    &#123;225, <span class="hljs-string">&quot;timer_getoverrun&quot;</span>&#125;,<br>    &#123;226, <span class="hljs-string">&quot;timer_delete&quot;</span>&#125;,<br>    &#123;227, <span class="hljs-string">&quot;clock_settime&quot;</span>&#125;,<br>    &#123;228, <span class="hljs-string">&quot;clock_gettime&quot;</span>&#125;,<br>    &#123;229, <span class="hljs-string">&quot;clock_getres&quot;</span>&#125;,<br>    &#123;230, <span class="hljs-string">&quot;clock_nanosleep&quot;</span>&#125;,<br>    &#123;231, <span class="hljs-string">&quot;exit_group&quot;</span>&#125;,<br>    &#123;232, <span class="hljs-string">&quot;epoll_wait&quot;</span>&#125;,<br>    &#123;233, <span class="hljs-string">&quot;epoll_ctl&quot;</span>&#125;,<br>    &#123;234, <span class="hljs-string">&quot;tgkill&quot;</span>&#125;,<br>    &#123;235, <span class="hljs-string">&quot;utimes&quot;</span>&#125;,<br>    &#123;236, <span class="hljs-string">&quot;vserver&quot;</span>&#125;,<br>    &#123;237, <span class="hljs-string">&quot;mbind&quot;</span>&#125;,<br>    &#123;238, <span class="hljs-string">&quot;set_mempolicy&quot;</span>&#125;,<br>    &#123;239, <span class="hljs-string">&quot;get_mempolicy&quot;</span>&#125;,<br>    &#123;240, <span class="hljs-string">&quot;mq_open&quot;</span>&#125;,<br>    &#123;241, <span class="hljs-string">&quot;mq_unlink&quot;</span>&#125;,<br>    &#123;242, <span class="hljs-string">&quot;mq_timedsend&quot;</span>&#125;,<br>    &#123;243, <span class="hljs-string">&quot;mq_timedreceive&quot;</span>&#125;,<br>    &#123;244, <span class="hljs-string">&quot;mq_notify&quot;</span>&#125;,<br>    &#123;245, <span class="hljs-string">&quot;mq_getsetattr&quot;</span>&#125;,<br>    &#123;246, <span class="hljs-string">&quot;kexec_load&quot;</span>&#125;,<br>    &#123;247, <span class="hljs-string">&quot;waitid&quot;</span>&#125;,<br>    &#123;248, <span class="hljs-string">&quot;add_key&quot;</span>&#125;,<br>    &#123;249, <span class="hljs-string">&quot;request_key&quot;</span>&#125;,<br>    &#123;250, <span class="hljs-string">&quot;keyctl&quot;</span>&#125;,<br>    &#123;251, <span class="hljs-string">&quot;ioprio_set&quot;</span>&#125;,<br>    &#123;252, <span class="hljs-string">&quot;ioprio_get&quot;</span>&#125;,<br>    &#123;253, <span class="hljs-string">&quot;inotify_init&quot;</span>&#125;,<br>    &#123;254, <span class="hljs-string">&quot;inotify_add_watch&quot;</span>&#125;,<br>    &#123;255, <span class="hljs-string">&quot;inotify_rm_watch&quot;</span>&#125;,<br>    &#123;256, <span class="hljs-string">&quot;migrate_pages&quot;</span>&#125;,<br>    &#123;257, <span class="hljs-string">&quot;openat&quot;</span>&#125;,<br>    &#123;258, <span class="hljs-string">&quot;mkdirat&quot;</span>&#125;,<br>    &#123;259, <span class="hljs-string">&quot;mknodat&quot;</span>&#125;,<br>    &#123;260, <span class="hljs-string">&quot;fchownat&quot;</span>&#125;,<br>    &#123;261, <span class="hljs-string">&quot;futimesat&quot;</span>&#125;,<br>    &#123;262, <span class="hljs-string">&quot;newfstatat&quot;</span>&#125;,<br>    &#123;263, <span class="hljs-string">&quot;unlinkat&quot;</span>&#125;,<br>    &#123;264, <span class="hljs-string">&quot;renameat&quot;</span>&#125;,<br>    &#123;265, <span class="hljs-string">&quot;linkat&quot;</span>&#125;,<br>    &#123;266, <span class="hljs-string">&quot;symlinkat&quot;</span>&#125;,<br>    &#123;267, <span class="hljs-string">&quot;readlinkat&quot;</span>&#125;,<br>    &#123;268, <span class="hljs-string">&quot;fchmodat&quot;</span>&#125;,<br>    &#123;269, <span class="hljs-string">&quot;faccessat&quot;</span>&#125;,<br>    &#123;270, <span class="hljs-string">&quot;pselect6&quot;</span>&#125;,<br>    &#123;271, <span class="hljs-string">&quot;ppoll&quot;</span>&#125;,<br>    &#123;272, <span class="hljs-string">&quot;unshare&quot;</span>&#125;,<br>    &#123;273, <span class="hljs-string">&quot;set_robust_list&quot;</span>&#125;,<br>    &#123;274, <span class="hljs-string">&quot;get_robust_list&quot;</span>&#125;,<br>    &#123;275, <span class="hljs-string">&quot;splice&quot;</span>&#125;,<br>    &#123;276, <span class="hljs-string">&quot;tee&quot;</span>&#125;,<br>    &#123;277, <span class="hljs-string">&quot;sync_file_range&quot;</span>&#125;,<br>    &#123;278, <span class="hljs-string">&quot;vmsplice&quot;</span>&#125;,<br>    &#123;279, <span class="hljs-string">&quot;move_pages&quot;</span>&#125;,<br>    &#123;280, <span class="hljs-string">&quot;utimensat&quot;</span>&#125;,<br>    &#123;281, <span class="hljs-string">&quot;epoll_pwait&quot;</span>&#125;,<br>    &#123;282, <span class="hljs-string">&quot;signalfd&quot;</span>&#125;,<br>    &#123;283, <span class="hljs-string">&quot;timerfd_create&quot;</span>&#125;,<br>    &#123;284, <span class="hljs-string">&quot;eventfd&quot;</span>&#125;,<br>    &#123;285, <span class="hljs-string">&quot;fallocate&quot;</span>&#125;,<br>    &#123;286, <span class="hljs-string">&quot;timerfd_settime&quot;</span>&#125;,<br>    &#123;287, <span class="hljs-string">&quot;timerfd_gettime&quot;</span>&#125;,<br>    &#123;288, <span class="hljs-string">&quot;accept4&quot;</span>&#125;,<br>    &#123;289, <span class="hljs-string">&quot;signalfd4&quot;</span>&#125;,<br>    &#123;290, <span class="hljs-string">&quot;eventfd2&quot;</span>&#125;,<br>    &#123;291, <span class="hljs-string">&quot;epoll_create1&quot;</span>&#125;,<br>    &#123;292, <span class="hljs-string">&quot;dup3&quot;</span>&#125;,<br>    &#123;293, <span class="hljs-string">&quot;pipe2&quot;</span>&#125;,<br>    &#123;294, <span class="hljs-string">&quot;inotify_init1&quot;</span>&#125;,<br>    &#123;295, <span class="hljs-string">&quot;preadv&quot;</span>&#125;,<br>    &#123;296, <span class="hljs-string">&quot;pwritev&quot;</span>&#125;,<br>    &#123;297, <span class="hljs-string">&quot;rt_tgsigqueueinfo&quot;</span>&#125;,<br>    &#123;298, <span class="hljs-string">&quot;perf_event_open&quot;</span>&#125;,<br>    &#123;299, <span class="hljs-string">&quot;recvmmsg&quot;</span>&#125;,<br>    &#123;300, <span class="hljs-string">&quot;fanotify_init&quot;</span>&#125;,<br>    &#123;301, <span class="hljs-string">&quot;fanotify_mark&quot;</span>&#125;,<br>    &#123;302, <span class="hljs-string">&quot;prlimit64&quot;</span>&#125;,<br>    &#123;303, <span class="hljs-string">&quot;name_to_handle_at&quot;</span>&#125;,<br>    &#123;304, <span class="hljs-string">&quot;open_by_handle_at&quot;</span>&#125;,<br>    &#123;305, <span class="hljs-string">&quot;clock_adjtime&quot;</span>&#125;,<br>    &#123;306, <span class="hljs-string">&quot;syncfs&quot;</span>&#125;,<br>    &#123;307, <span class="hljs-string">&quot;sendmmsg&quot;</span>&#125;,<br>    &#123;308, <span class="hljs-string">&quot;setns&quot;</span>&#125;,<br>    &#123;309, <span class="hljs-string">&quot;getcpu&quot;</span>&#125;,<br>    &#123;310, <span class="hljs-string">&quot;process_vm_readv&quot;</span>&#125;,<br>    &#123;311, <span class="hljs-string">&quot;process_vm_writev&quot;</span>&#125;,<br>    &#123;312, <span class="hljs-string">&quot;kcmp&quot;</span>&#125;,<br>    &#123;313, <span class="hljs-string">&quot;finit_module&quot;</span>&#125;,<br>    &#123;314, <span class="hljs-string">&quot;sched_setattr&quot;</span>&#125;,<br>    &#123;315, <span class="hljs-string">&quot;sched_getattr&quot;</span>&#125;,<br>    &#123;316, <span class="hljs-string">&quot;renameat2&quot;</span>&#125;,<br>    &#123;317, <span class="hljs-string">&quot;seccomp&quot;</span>&#125;,<br>    &#123;318, <span class="hljs-string">&quot;getrandom&quot;</span>&#125;,<br>    &#123;319, <span class="hljs-string">&quot;memfd_create&quot;</span>&#125;,<br>    &#123;320, <span class="hljs-string">&quot;kexec_file_load&quot;</span>&#125;,<br>    &#123;321, <span class="hljs-string">&quot;bpf&quot;</span>&#125;,<br>    &#123;322, <span class="hljs-string">&quot;execveat&quot;</span>&#125;,<br>    &#123;323, <span class="hljs-string">&quot;userfaultfd&quot;</span>&#125;,<br>    &#123;324, <span class="hljs-string">&quot;membarrier&quot;</span>&#125;,<br>    &#123;325, <span class="hljs-string">&quot;mlock2&quot;</span>&#125;,<br>    &#123;326, <span class="hljs-string">&quot;copy_file_range&quot;</span>&#125;,<br>    &#123;327, <span class="hljs-string">&quot;preadv2&quot;</span>&#125;,<br>    &#123;328, <span class="hljs-string">&quot;pwritev2&quot;</span>&#125;,<br>    &#123;329, <span class="hljs-string">&quot;pkey_mprotect&quot;</span>&#125;,<br>    &#123;330, <span class="hljs-string">&quot;pkey_alloc&quot;</span>&#125;,<br>    &#123;331, <span class="hljs-string">&quot;pkey_free&quot;</span>&#125;,<br>    &#123;332, <span class="hljs-string">&quot;statx&quot;</span>&#125;,<br>    &#123;333, <span class="hljs-string">&quot;io_pgetevents&quot;</span>&#125;,<br>    &#123;334, <span class="hljs-string">&quot;rseq&quot;</span>&#125;,<br>    &#123;424, <span class="hljs-string">&quot;pidfd_send_signal&quot;</span>&#125;,<br>    &#123;425, <span class="hljs-string">&quot;io_uring_setup&quot;</span>&#125;,<br>    &#123;426, <span class="hljs-string">&quot;io_uring_enter&quot;</span>&#125;,<br>    &#123;427, <span class="hljs-string">&quot;io_uring_register&quot;</span>&#125;,<br>    &#123;428, <span class="hljs-string">&quot;open_tree&quot;</span>&#125;,<br>    &#123;429, <span class="hljs-string">&quot;move_mount&quot;</span>&#125;,<br>    &#123;430, <span class="hljs-string">&quot;fsopen&quot;</span>&#125;,<br>    &#123;431, <span class="hljs-string">&quot;fsconfig&quot;</span>&#125;,<br>    &#123;432, <span class="hljs-string">&quot;fsmount&quot;</span>&#125;,<br>    &#123;433, <span class="hljs-string">&quot;fspick&quot;</span>&#125;,<br>    &#123;434, <span class="hljs-string">&quot;pidfd_open&quot;</span>&#125;,<br>    &#123;435, <span class="hljs-string">&quot;clone3&quot;</span>&#125;,<br>    &#123;436, <span class="hljs-string">&quot;close_range&quot;</span>&#125;,<br>    &#123;437, <span class="hljs-string">&quot;openat2&quot;</span>&#125;,<br>    &#123;438, <span class="hljs-string">&quot;pidfd_getfd&quot;</span>&#125;,<br>    &#123;439, <span class="hljs-string">&quot;faccessat2&quot;</span>&#125;,<br>    &#123;440, <span class="hljs-string">&quot;process_madvise&quot;</span>&#125;,<br>    &#123;512, <span class="hljs-string">&quot;rt_sigaction&quot;</span>&#125;,<br>    &#123;513, <span class="hljs-string">&quot;rt_sigreturn&quot;</span>&#125;,<br>    &#123;514, <span class="hljs-string">&quot;ioctl&quot;</span>&#125;,<br>    &#123;515, <span class="hljs-string">&quot;readv&quot;</span>&#125;,<br>    &#123;516, <span class="hljs-string">&quot;writev&quot;</span>&#125;,<br>    &#123;517, <span class="hljs-string">&quot;recvfrom&quot;</span>&#125;,<br>    &#123;518, <span class="hljs-string">&quot;sendmsg&quot;</span>&#125;,<br>    &#123;519, <span class="hljs-string">&quot;recvmsg&quot;</span>&#125;,<br>    &#123;520, <span class="hljs-string">&quot;execve&quot;</span>&#125;,<br>    &#123;521, <span class="hljs-string">&quot;ptrace&quot;</span>&#125;,<br>    &#123;522, <span class="hljs-string">&quot;rt_sigpending&quot;</span>&#125;,<br>    &#123;523, <span class="hljs-string">&quot;rt_sigtimedwait&quot;</span>&#125;,<br>    &#123;524, <span class="hljs-string">&quot;rt_sigqueueinfo&quot;</span>&#125;,<br>    &#123;525, <span class="hljs-string">&quot;sigaltstack&quot;</span>&#125;,<br>    &#123;526, <span class="hljs-string">&quot;timer_create&quot;</span>&#125;,<br>    &#123;527, <span class="hljs-string">&quot;mq_notify&quot;</span>&#125;,<br>    &#123;528, <span class="hljs-string">&quot;kexec_load&quot;</span>&#125;,<br>    &#123;529, <span class="hljs-string">&quot;waitid&quot;</span>&#125;,<br>    &#123;530, <span class="hljs-string">&quot;set_robust_list&quot;</span>&#125;,<br>    &#123;531, <span class="hljs-string">&quot;get_robust_list&quot;</span>&#125;,<br>    &#123;532, <span class="hljs-string">&quot;vmsplice&quot;</span>&#125;,<br>    &#123;533, <span class="hljs-string">&quot;move_pages&quot;</span>&#125;,<br>    &#123;534, <span class="hljs-string">&quot;preadv&quot;</span>&#125;,<br>    &#123;535, <span class="hljs-string">&quot;pwritev&quot;</span>&#125;,<br>    &#123;536, <span class="hljs-string">&quot;rt_tgsigqueueinfo&quot;</span>&#125;,<br>    &#123;537, <span class="hljs-string">&quot;recvmmsg&quot;</span>&#125;,<br>    &#123;538, <span class="hljs-string">&quot;sendmmsg&quot;</span>&#125;,<br>    &#123;539, <span class="hljs-string">&quot;process_vm_readv&quot;</span>&#125;,<br>    &#123;540, <span class="hljs-string">&quot;process_vm_writev&quot;</span>&#125;,<br>    &#123;541, <span class="hljs-string">&quot;setsockopt&quot;</span>&#125;,<br>    &#123;542, <span class="hljs-string">&quot;getsockopt&quot;</span>&#125;,<br>    &#123;543, <span class="hljs-string">&quot;io_setup&quot;</span>&#125;,<br>    &#123;544, <span class="hljs-string">&quot;io_submit&quot;</span>&#125;,<br>    &#123;545, <span class="hljs-string">&quot;execveat&quot;</span>&#125;,<br>    &#123;546, <span class="hljs-string">&quot;preadv2&quot;</span>&#125;,<br>    &#123;547, <span class="hljs-string">&quot;pwritev2&quot;</span>&#125;,<br>    &#123;-1, NULL&#125;,<br>&#125;;<br><br>char *find_syscall_symbol(int code) &#123;<br>    struct syscall *sc;<br><br>    <span class="hljs-keyword">for</span> (sc = syscall_table; sc-&gt;code &gt;= 0; sc++) &#123;<br>        <span class="hljs-keyword">if</span> (sc-&gt;code == code) &#123;<br>            <span class="hljs-built_in">return</span> sc-&gt;name;<br>        &#125;<br>    &#125;<br><br>    <span class="hljs-built_in">return</span> NULL;<br>&#125;<br><br>int main(int argc, char *argv[])<br>&#123;<br>    pid_t child;<br>    int status;<br>    struct user_regs_struct regs;<br>    int orig_rax;<br><br>    child = fork();<br>    <span class="hljs-keyword">if</span> (child == 0) &#123;<br>        ptrace(PTRACE_TRACEME, 0, NULL, NULL);<br>        execl(<span class="hljs-string">&quot;/bin/ls&quot;</span>, <span class="hljs-string">&quot;/bin/ls&quot;</span>, NULL);<br>        <span class="hljs-built_in">exit</span>(0);<br>    &#125; <span class="hljs-keyword">else</span> &#123;<br>        <span class="hljs-built_in">wait</span>(&amp;status); // 接收被子进程发送过来的 SIGCHLD 信号<br><br>        <span class="hljs-keyword">while</span> (1) &#123;<br>            // 1. 发送 PTRACE_SYSCALL 命令给被跟踪进程 (调用系统调用前，可以获取系统调用的参数)<br>            ptrace(PTRACE_SYSCALL, child, NULL, NULL);<br><br>            <span class="hljs-built_in">wait</span>(&amp;status); // 接收被子进程发送过来的 SIGCHLD 信号<br>            <span class="hljs-keyword">if</span>(WIFEXITED(status)) &#123; // 如果子进程退出了, 那么终止跟踪<br>                <span class="hljs-built_in">break</span>;<br>            &#125;<br><br>            ptrace(PTRACE_GETREGS, child, 0, &amp;regs); // 获取被跟踪进程寄存器的值<br><br>            orig_rax = regs.orig_rax; // 获取rax寄存器的值<br><br>            <span class="hljs-built_in">printf</span>(<span class="hljs-string">&quot;syscall: %s()\n&quot;</span>, find_syscall_symbol(orig_rax)); // 打印rax寄存器的值<br><br>            // 2. 发送 PTRACE_SYSCALL 命令给被跟踪进程 (调用系统调用后，可以获取系统调用的返回值)<br>            ptrace(PTRACE_SYSCALL, child, NULL, NULL);<br><br>            <span class="hljs-built_in">wait</span>(&amp;status); // 接收被子进程发送过来的 SIGCHLD 信号<br>            <span class="hljs-keyword">if</span>(WIFEXITED(status)) &#123; // 如果子进程退出了, 那么终止跟踪<br>                <span class="hljs-built_in">break</span>;<br>            &#125;<br>        &#125;<br>    &#125;<br><br>    <span class="hljs-built_in">return</span> 0;<br>&#125;<br></code></pre></td></tr></table></figure>
+                
+              </div>
+            
+            <hr/>
+            <div>
+              <div class="post-metas my-3">
+  
+  
+</div>
+
+
+              
+  
+
+  <div class="license-box my-3">
+    <div class="license-title">
+      <div>strace实现原理：ptrace系统调用</div>
+      <div>http://example.com/2022/11/14/strace实现原理：ptrace系统调用/</div>
+    </div>
+    <div class="license-meta">
+      
+        <div class="license-meta-item">
+          <div>作者</div>
+          <div>听说你是小兔叽</div>
+        </div>
+      
+      
+        <div class="license-meta-item license-meta-date">
+          <div>发布于</div>
+          <div>2022年11月14日</div>
+        </div>
+      
+      
+        <div class="license-meta-item license-meta-date">
+          <div>更新于</div>
+          <div>2022年11月14日</div>
+        </div>
+      
+      
+        <div class="license-meta-item">
+          <div>许可协议</div>
+          <div>
+            
+              
+              
+                <a target="_blank" href="https://creativecommons.org/licenses/by-nc-sa/4.0/">
+                  <span class="hint--top hint--rounded" aria-label="BY - 署名">
+                    <i class="iconfont icon-by"></i>
+                  </span>
+                </a>
+              
+                <a target="_blank" href="https://creativecommons.org/licenses/by-nc-sa/4.0/">
+                  <span class="hint--top hint--rounded" aria-label="NC - 非商业性使用">
+                    <i class="iconfont icon-nc"></i>
+                  </span>
+                </a>
+              
+                <a target="_blank" href="https://creativecommons.org/licenses/by-nc-sa/4.0/">
+                  <span class="hint--top hint--rounded" aria-label="SA - 相同方式共享">
+                    <i class="iconfont icon-sa"></i>
+                  </span>
+                </a>
+              
+            
+          </div>
+        </div>
+      
+    </div>
+    <div class="license-icon iconfont"></div>
+  </div>
+
+
+
+              
+                <div class="post-prevnext my-3">
+                  <article class="post-prev col-6">
+                    
+                    
+                  </article>
+                  <article class="post-next col-6">
+                    
+                    
+                      <a href="/2022/11/14/Android%E5%86%85%E5%AD%98%E8%AF%BB%E5%86%99%E6%96%AD%E7%82%B9-mprotect/" title="Android内存读写断点--mprotect">
+                        <span class="hidden-mobile">Android内存读写断点--mprotect</span>
+                        <span class="visible-mobile">下一篇</span>
+                        <i class="iconfont icon-arrowright"></i>
+                      </a>
+                    
+                  </article>
+                </div>
+              
+            </div>
+
+            
+          </article>
+        </div>
+      </div>
+    </div>
+
+    <div class="side-col d-none d-lg-block col-lg-2">
+      
+  <aside class="sidebar" style="margin-left: -1rem">
+    <div id="toc">
+  <p class="toc-header"><i class="iconfont icon-list"></i>&nbsp;目录</p>
+  <div class="toc-body" id="toc-body"></div>
+</div>
+
+
+
+  </aside>
+
+
+    </div>
+  </div>
+</div>
+
+
+
+
+
+  
+
+
+
+  
+
+
+
+  
+
+
+
+  
+
+
+
+  
+
+
+
+
+
+
+
+    
+
+    
+      <a id="scroll-top-button" aria-label="TOP" href="#" role="button">
+        <i class="iconfont icon-arrowup" aria-hidden="true"></i>
+      </a>
+    
+
+    
+      <div class="modal fade" id="modalSearch" tabindex="-1" role="dialog" aria-labelledby="ModalLabel"
+     aria-hidden="true">
+  <div class="modal-dialog modal-dialog-scrollable modal-lg" role="document">
+    <div class="modal-content">
+      <div class="modal-header text-center">
+        <h4 class="modal-title w-100 font-weight-bold">搜索</h4>
+        <button type="button" id="local-search-close" class="close" data-dismiss="modal" aria-label="Close">
+          <span aria-hidden="true">&times;</span>
+        </button>
+      </div>
+      <div class="modal-body mx-3">
+        <div class="md-form mb-5">
+          <input type="text" id="local-search-input" class="form-control validate">
+          <label data-error="x" data-success="v" for="local-search-input">关键词</label>
+        </div>
+        <div class="list-group" id="local-search-result"></div>
+      </div>
+    </div>
+  </div>
+</div>
+
+    
+
+    
+  </main>
+
+  <footer>
+    <div class="footer-inner">
+  
+    <div class="footer-content">
+       <a href="https://hexo.io" target="_blank" rel="nofollow noopener"><span>Hexo</span></a> <i class="iconfont icon-love"></i> <a href="https://github.com/fluid-dev/hexo-theme-fluid" target="_blank" rel="nofollow noopener"><span>Fluid</span></a> 
+    </div>
+  
+  
+  
+  
+</div>
+
+  </footer>
+
+  <!-- Scripts -->
+  
+  <script  src="https://lib.baomitu.com/nprogress/0.2.0/nprogress.min.js" ></script>
+  <link  rel="stylesheet" href="https://lib.baomitu.com/nprogress/0.2.0/nprogress.min.css" />
+
+  <script>
+    NProgress.configure({"showSpinner":false,"trickleSpeed":100})
+    NProgress.start()
+    window.addEventListener('load', function() {
+      NProgress.done();
+    })
+  </script>
+
+
+<script  src="https://lib.baomitu.com/jquery/3.6.0/jquery.min.js" ></script>
+<script  src="https://lib.baomitu.com/twitter-bootstrap/4.6.1/js/bootstrap.min.js" ></script>
+<script  src="/js/events.js" ></script>
+<script  src="/js/plugins.js" ></script>
+
+
+  <script  src="https://lib.baomitu.com/typed.js/2.0.12/typed.min.js" ></script>
+  <script>
+    (function (window, document) {
+      var typing = Fluid.plugins.typing;
+      var subtitle = document.getElementById('subtitle');
+      if (!subtitle || !typing) {
+        return;
+      }
+      var text = subtitle.getAttribute('data-typed-text');
+      
+        typing(text);
+      
+    })(window, document);
+  </script>
+
+
+
+
+  
+    <script  src="/js/img-lazyload.js" ></script>
+  
+
+
+
+
+  
+<script>
+  Fluid.utils.createScript('https://lib.baomitu.com/tocbot/4.18.2/tocbot.min.js', function() {
+    var toc = jQuery('#toc');
+    if (toc.length === 0 || !window.tocbot) { return; }
+    var boardCtn = jQuery('#board-ctn');
+    var boardTop = boardCtn.offset().top;
+
+    window.tocbot.init(Object.assign({
+      tocSelector     : '#toc-body',
+      contentSelector : '.markdown-body',
+      linkClass       : 'tocbot-link',
+      activeLinkClass : 'tocbot-active-link',
+      listClass       : 'tocbot-list',
+      isCollapsedClass: 'tocbot-is-collapsed',
+      collapsibleClass: 'tocbot-is-collapsible',
+      scrollSmooth    : true,
+      includeTitleTags: true,
+      headingsOffset  : -boardTop,
+    }, CONFIG.toc));
+    if (toc.find('.toc-list-item').length > 0) {
+      toc.css('visibility', 'visible');
+    }
+
+    Fluid.events.registerRefreshCallback(function() {
+      if ('tocbot' in window) {
+        tocbot.refresh();
+        var toc = jQuery('#toc');
+        if (toc.length === 0 || !tocbot) {
+          return;
+        }
+        if (toc.find('.toc-list-item').length > 0) {
+          toc.css('visibility', 'visible');
+        }
+      }
+    });
+  });
+</script>
+
+
+  <script src=https://lib.baomitu.com/clipboard.js/2.0.11/clipboard.min.js></script>
+
+  <script>Fluid.plugins.codeWidget();</script>
+
+
+  
+<script>
+  Fluid.utils.createScript('https://lib.baomitu.com/anchor-js/4.3.1/anchor.min.js', function() {
+    window.anchors.options = {
+      placement: CONFIG.anchorjs.placement,
+      visible  : CONFIG.anchorjs.visible
+    };
+    if (CONFIG.anchorjs.icon) {
+      window.anchors.options.icon = CONFIG.anchorjs.icon;
+    }
+    var el = (CONFIG.anchorjs.element || 'h1,h2,h3,h4,h5,h6').split(',');
+    var res = [];
+    for (var item of el) {
+      res.push('.markdown-body > ' + item.trim());
+    }
+    if (CONFIG.anchorjs.placement === 'left') {
+      window.anchors.options.class = 'anchorjs-link-left';
+    }
+    window.anchors.add(res.join(', '));
+
+    Fluid.events.registerRefreshCallback(function() {
+      if ('anchors' in window) {
+        anchors.removeAll();
+        var el = (CONFIG.anchorjs.element || 'h1,h2,h3,h4,h5,h6').split(',');
+        var res = [];
+        for (var item of el) {
+          res.push('.markdown-body > ' + item.trim());
+        }
+        if (CONFIG.anchorjs.placement === 'left') {
+          anchors.options.class = 'anchorjs-link-left';
+        }
+        anchors.add(res.join(', '));
+      }
+    });
+  });
+</script>
+
+
+  
+<script>
+  Fluid.utils.createScript('https://lib.baomitu.com/fancybox/3.5.7/jquery.fancybox.min.js', function() {
+    Fluid.plugins.fancyBox();
+  });
+</script>
+
+
+  <script>Fluid.plugins.imageCaption();</script>
+
+  <script  src="/js/local-search.js" ></script>
+
+
+
+
+
+<!-- 主题的启动项，将它保持在最底部 -->
+<!-- the boot of the theme, keep it at the bottom -->
+<script  src="/js/boot.js" ></script>
+
+
+  
+
+  <noscript>
+    <div class="noscript-warning">博客在允许 JavaScript 运行的环境下浏览效果更佳</div>
+  </noscript>
+</body>
+</html>

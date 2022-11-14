@@ -1,0 +1,705 @@
+
+
+<!DOCTYPE html>
+<html lang="zh-CN" data-default-color-scheme=auto>
+
+
+
+<head>
+  <meta charset="UTF-8">
+  <link rel="apple-touch-icon" sizes="76x76" href="/img/fluid.png">
+  <link rel="icon" href="/img/fluid.png">
+  <meta name="viewport" content="width=device-width, initial-scale=1.0, maximum-scale=5.0, shrink-to-fit=no">
+  <meta http-equiv="x-ua-compatible" content="ie=edge">
+  
+  <meta name="theme-color" content="#2f4154">
+  <meta name="author" content="听说你是小兔叽">
+  <meta name="keywords" content="">
+  
+    <meta name="description" content="So注入so注入的主要思路是：找到目标进程使用ptrace跟踪目标进程，保存目标进程的状态获得mmap、dlopen、dlsym等库函数在目标进程中的偏移地址调用mmap在目标进程内部申请一段内存空间将我们的ShellCode写入到刚才申请的内存空间中dlopen打开Shellcode，dlsym调用Shellcode库的函数恢复原so状态，detach 核心点 ptrace12345678#in">
+<meta property="og:type" content="article">
+<meta property="og:title" content="ptrace注入so">
+<meta property="og:url" content="http://example.com/2022/06/27/ptrace%E6%B3%A8%E5%85%A5so/index.html">
+<meta property="og:site_name" content="听说你是小兔叽的博客">
+<meta property="og:description" content="So注入so注入的主要思路是：找到目标进程使用ptrace跟踪目标进程，保存目标进程的状态获得mmap、dlopen、dlsym等库函数在目标进程中的偏移地址调用mmap在目标进程内部申请一段内存空间将我们的ShellCode写入到刚才申请的内存空间中dlopen打开Shellcode，dlsym调用Shellcode库的函数恢复原so状态，detach 核心点 ptrace12345678#in">
+<meta property="og:locale" content="zh_CN">
+<meta property="article:published_time" content="2022-06-27T13:22:30.000Z">
+<meta property="article:modified_time" content="2022-11-14T13:46:02.167Z">
+<meta property="article:author" content="听说你是小兔叽">
+<meta name="twitter:card" content="summary_large_image">
+  
+  
+  
+  <title>ptrace注入so - 听说你是小兔叽的博客</title>
+
+  <link  rel="stylesheet" href="https://lib.baomitu.com/twitter-bootstrap/4.6.1/css/bootstrap.min.css" />
+
+
+
+  <link  rel="stylesheet" href="https://lib.baomitu.com/github-markdown-css/4.0.0/github-markdown.min.css" />
+
+  <link  rel="stylesheet" href="https://lib.baomitu.com/hint.css/2.7.0/hint.min.css" />
+
+  <link  rel="stylesheet" href="https://lib.baomitu.com/fancybox/3.5.7/jquery.fancybox.min.css" />
+
+
+
+<!-- 主题依赖的图标库，不要自行修改 -->
+<!-- Do not modify the link that theme dependent icons -->
+
+<link rel="stylesheet" href="//at.alicdn.com/t/font_1749284_hj8rtnfg7um.css">
+
+
+
+<link rel="stylesheet" href="//at.alicdn.com/t/font_1736178_lbnruvf0jn.css">
+
+
+<link  rel="stylesheet" href="/css/main.css" />
+
+
+  <link id="highlight-css" rel="stylesheet" href="/css/highlight.css" />
+  
+    <link id="highlight-css-dark" rel="stylesheet" href="/css/highlight-dark.css" />
+  
+
+
+
+
+  <script id="fluid-configs">
+    var Fluid = window.Fluid || {};
+    Fluid.ctx = Object.assign({}, Fluid.ctx)
+    var CONFIG = {"hostname":"example.com","root":"/","version":"1.9.3","typing":{"enable":true,"typeSpeed":70,"cursorChar":"_","loop":false,"scope":[]},"anchorjs":{"enable":true,"element":"h1,h2,h3,h4,h5,h6","placement":"left","visible":"hover","icon":""},"progressbar":{"enable":true,"height_px":3,"color":"#29d","options":{"showSpinner":false,"trickleSpeed":100}},"code_language":{"enable":true,"default":"TEXT"},"copy_btn":true,"image_caption":{"enable":true},"image_zoom":{"enable":true,"img_url_replace":["",""]},"toc":{"enable":true,"placement":"right","headingSelector":"h1,h2,h3,h4,h5,h6","collapseDepth":0},"lazyload":{"enable":true,"loading_img":"/img/loading.gif","onlypost":false,"offset_factor":2},"web_analytics":{"enable":false,"follow_dnt":true,"baidu":null,"google":null,"gtag":null,"tencent":{"sid":null,"cid":null},"woyaola":null,"cnzz":null,"leancloud":{"app_id":null,"app_key":null,"server_url":null,"path":"window.location.pathname","ignore_local":false}},"search_path":"/local-search.xml"};
+
+    if (CONFIG.web_analytics.follow_dnt) {
+      var dntVal = navigator.doNotTrack || window.doNotTrack || navigator.msDoNotTrack;
+      Fluid.ctx.dnt = dntVal && (dntVal.startsWith('1') || dntVal.startsWith('yes') || dntVal.startsWith('on'));
+    }
+  </script>
+  <script  src="/js/utils.js" ></script>
+  <script  src="/js/color-schema.js" ></script>
+  
+
+
+  
+<meta name="generator" content="Hexo 6.3.0"></head>
+
+
+<body>
+  
+
+  <header>
+    
+
+<div class="header-inner" style="height: 70vh;">
+  <nav id="navbar" class="navbar fixed-top  navbar-expand-lg navbar-dark scrolling-navbar">
+  <div class="container">
+    <a class="navbar-brand" href="/">
+      <strong>听说你是小兔叽 个人博客</strong>
+    </a>
+
+    <button id="navbar-toggler-btn" class="navbar-toggler" type="button" data-toggle="collapse"
+            data-target="#navbarSupportedContent"
+            aria-controls="navbarSupportedContent" aria-expanded="false" aria-label="Toggle navigation">
+      <div class="animated-icon"><span></span><span></span><span></span></div>
+    </button>
+
+    <!-- Collapsible content -->
+    <div class="collapse navbar-collapse" id="navbarSupportedContent">
+      <ul class="navbar-nav ml-auto text-center">
+        
+          
+          
+          
+          
+            <li class="nav-item">
+              <a class="nav-link" href="/">
+                <i class="iconfont icon-home-fill"></i>
+                首页
+              </a>
+            </li>
+          
+        
+          
+          
+          
+          
+            <li class="nav-item">
+              <a class="nav-link" href="/archives/">
+                <i class="iconfont icon-archive-fill"></i>
+                归档
+              </a>
+            </li>
+          
+        
+          
+          
+          
+          
+            <li class="nav-item">
+              <a class="nav-link" href="/categories/">
+                <i class="iconfont icon-category-fill"></i>
+                分类
+              </a>
+            </li>
+          
+        
+          
+          
+          
+          
+            <li class="nav-item">
+              <a class="nav-link" href="/tags/">
+                <i class="iconfont icon-tags-fill"></i>
+                标签
+              </a>
+            </li>
+          
+        
+          
+          
+          
+          
+            <li class="nav-item">
+              <a class="nav-link" href="/about/">
+                <i class="iconfont icon-user-fill"></i>
+                关于
+              </a>
+            </li>
+          
+        
+        
+          <li class="nav-item" id="search-btn">
+            <a class="nav-link" target="_self" href="javascript:;" data-toggle="modal" data-target="#modalSearch" aria-label="Search">
+              &nbsp;<i class="iconfont icon-search"></i>&nbsp;
+            </a>
+          </li>
+          
+        
+        
+          <li class="nav-item" id="color-toggle-btn">
+            <a class="nav-link" target="_self" href="javascript:;" aria-label="Color Toggle">&nbsp;<i
+                class="iconfont icon-dark" id="color-toggle-icon"></i>&nbsp;</a>
+          </li>
+        
+      </ul>
+    </div>
+  </div>
+</nav>
+
+  
+
+<div id="banner" class="banner" parallax=true
+     style="background: url('/img/default.png') no-repeat center center; background-size: cover;">
+  <div class="full-bg-img">
+    <div class="mask flex-center" style="background-color: rgba(0, 0, 0, 0.3)">
+      <div class="banner-text text-center fade-in-up">
+        <div class="h2">
+          
+            <span id="subtitle" data-typed-text="ptrace注入so"></span>
+          
+        </div>
+
+        
+          
+  <div class="mt-3">
+    
+    
+      <span class="post-meta">
+        <i class="iconfont icon-date-fill" aria-hidden="true"></i>
+        <time datetime="2022-06-27 21:22" pubdate>
+          2022年6月27日 晚上
+        </time>
+      </span>
+    
+  </div>
+
+  <div class="mt-1">
+    
+      <span class="post-meta mr-2">
+        <i class="iconfont icon-chart"></i>
+        
+          12k 字
+        
+      </span>
+    
+
+    
+      <span class="post-meta mr-2">
+        <i class="iconfont icon-clock-fill"></i>
+        
+        
+        
+          104 分钟
+        
+      </span>
+    
+
+    
+    
+  </div>
+
+
+        
+      </div>
+
+      
+    </div>
+  </div>
+</div>
+
+</div>
+
+  </header>
+
+  <main>
+    
+      
+
+<div class="container-fluid nopadding-x">
+  <div class="row nomargin-x">
+    <div class="side-col d-none d-lg-block col-lg-2">
+      
+
+    </div>
+
+    <div class="col-lg-8 nopadding-x-md">
+      <div class="container nopadding-x-md" id="board-ctn">
+        <div id="board">
+          <article class="post-content mx-auto">
+            <!-- SEO header -->
+            <h1 style="display: none">ptrace注入so</h1>
+            
+            
+              <div class="markdown-body">
+                
+                <h1 id="So注入"><a href="#So注入" class="headerlink" title="So注入"></a>So注入</h1><p>so注入的主要思路是：<br>找到目标进程<br>使用ptrace跟踪目标进程，保存目标进程的状态<br>获得mmap、dlopen、dlsym等库函数在目标进程中的偏移地址<br>调用mmap在目标进程内部申请一段内存空间<br>将我们的ShellCode写入到刚才申请的内存空间中<br>dlopen打开Shellcode，dlsym调用Shellcode库的函数<br>恢复原so状态，detach</p>
+<h1 id="核心点-ptrace"><a href="#核心点-ptrace" class="headerlink" title="核心点 ptrace"></a>核心点 ptrace</h1><figure class="highlight bash"><table><tr><td class="gutter"><pre><span class="line">1</span><br><span class="line">2</span><br><span class="line">3</span><br><span class="line">4</span><br><span class="line">5</span><br><span class="line">6</span><br><span class="line">7</span><br><span class="line">8</span><br></pre></td><td class="code"><pre><code class="hljs bash"><span class="hljs-comment">#include &lt;sys/ptrace.h&gt;</span><br><br>long ptrace（enum _ptrace_request request,pid_t pid,void * addr ,void *data）;<br><br>    1). enum __ptrace_request request：指示了ptrace要执行的命令。<br>    2). pid_t pid: 指示ptrace要跟踪的进程。<br>    3). void *addr: 指示要监控的内存地址。<br>    4). void *data: 存放读取出的或者要写入的数据。<br></code></pre></td></tr></table></figure>
+<p>简单点，ptrace是个系统调用，功能是提供一个进程（父进程）监控和管理另一个进程（子进程）的能力，并允许父进程检查和替换子进程的内核镜像(包括寄存器)的值。</p>
+<p>基本原理是: 当使用了ptrace跟踪后，所有发送给被跟踪的子进程的信号(除了SIGKILL)，都会被转发给父进程，而子进程则会被阻塞，这时子进程的状态就会被系统标注为TASK_TRACED。而父进程收到信号后，就可以对停止下来的子进程进行检查和修改，然后让子进程继续运行。</p>
+<h2 id="ptrace命令"><a href="#ptrace命令" class="headerlink" title="ptrace命令"></a>ptrace命令</h2><p>1). 用PTRACE_ATTACH或者PTRACE_TRACEME 建立进程间的跟踪关系。<br>2). PTRACE_PEEKTEXT, PTRACE_PEEKDATA, PTRACE_PEEKUSR等读取子进程内存&#x2F;寄存器中保留的值。<br>3). PTRACE_POKETEXT, PTRACE_POKEDATA, PTRACE_POKEUSR等把值写入到被跟踪进程的内存&#x2F;寄存器中<br>4). 用PTRACE_CONT，PTRACE_SYSCALL, PTRACE_SINGLESTEP控制被跟踪进程以何种方式继续运行。<br>5). PTRACE_DETACH, PTRACE_KILL 脱离进程间的跟踪关系。</p>
+<p>TIPS:</p>
+<figure class="highlight bash"><table><tr><td class="gutter"><pre><span class="line">1</span><br><span class="line">2</span><br><span class="line">3</span><br><span class="line">4</span><br><span class="line">5</span><br><span class="line">6</span><br><span class="line">7</span><br><span class="line">8</span><br></pre></td><td class="code"><pre><code class="hljs bash">1. 进程状态TASK_TRACED用以表示当前进程因为被父进程跟踪而被系统停止。<br>2. 如在子进程结束前，父进程结束，则trace关系解除。<br>3. 利用attach建立起来的跟踪关系，虽然ps看到双方为父子关系，但在<span class="hljs-string">&quot;子进程&quot;</span>中调用getppid()仍会返回原来的父进程<span class="hljs-built_in">id</span>。<br>4. 不能attach到自己不能跟踪的进程，如non-root进程跟踪root进程。<br>5. 已经被trace的进程，不能再次被attach。<br>6. 即使是用PTRACE_TRACEME建立起来的跟踪关系，也可以用DETACH的方式予以解除。<br>7. 因为进入/退出系统调用都会触发一次SIGTRAP，所以通常的做法是在第一次(进入)的时候读取系统调用的参数，在第二次(退出)的时候读取系统调用的返回值。但注意execve是个例外。<br>8. 程序调试时的断点由int 3设置完成，而单步跟踪则可由ptrace(PTRACE_SINGLESTEP)实现。<br></code></pre></td></tr></table></figure>
+<figure class="highlight bash"><table><tr><td class="gutter"><pre><span class="line">1</span><br><span class="line">2</span><br><span class="line">3</span><br><span class="line">4</span><br><span class="line">5</span><br><span class="line">6</span><br><span class="line">7</span><br><span class="line">8</span><br><span class="line">9</span><br><span class="line">10</span><br><span class="line">11</span><br><span class="line">12</span><br><span class="line">13</span><br><span class="line">14</span><br><span class="line">15</span><br></pre></td><td class="code"><pre><code class="hljs bash">switch(pid = fork())  <br>   &#123;  <br>   <span class="hljs-keyword">case</span> -1:  <br>       <span class="hljs-built_in">return</span> -1;  <br>   <span class="hljs-keyword">case</span> 0: //子进程  <br>       ptrace(PTRACE_TRACEME,0,NULL,NULL);  <br>       execl(<span class="hljs-string">&quot;./HelloWorld&quot;</span>, <span class="hljs-string">&quot;HelloWorld&quot;</span>, NULL);  <br>   default: //父进程  <br>       <span class="hljs-built_in">wait</span>(&amp;val); //等待并记录execve  <br>       <span class="hljs-keyword">if</span>(WIFEXITED(val))  <br>           <span class="hljs-built_in">return</span> 0;  <br>       syscallID=ptrace(PTRACE_PEEKUSER, pid, ORIG_EAX*4, NULL);  <br>       <span class="hljs-built_in">printf</span>(<span class="hljs-string">&quot;Process executed system call ID = %ld/n&quot;</span>,syscallID);  <br>       ptrace(PTRACE_SYSCALL,pid,NULL,NULL);  <br>   &#125;<br></code></pre></td></tr></table></figure>
+<p>在上面的程序中，fork出的子进程先调用了ptrace(PTRACE_TRACEME)表示子进程让父进程跟踪自己。然后子进程调用execl加载执行了HelloWorld。</p>
+<p>而在父进程中则使用wait系统调用等待子进程的中断或结束。子进程因为设置了PTRACE_TRACEME而在执行系统调用被系统停止(设置为TASK_TRACED)，这时父进程被唤醒，使用ptrace(PTRACE_PEEKUSER,pid,…)分别去读取子进程执行的系统调用ID(放在ORIG_EAX中)以及系统调用返回时的值(放在EAX中)。然后使用ptrace(PTRACE_SYSCALL,pid,…)指示子进程运行到下一次执行系统调用的时候(进入或者退出)，直到子进程退出为止。</p>
+<p>wait指令会让父进程挂起，等待子进程的中断或结束</p>
+<h1 id="断点原理"><a href="#断点原理" class="headerlink" title="断点原理"></a>断点原理</h1><p>断点是大家在调试程序时常用的一个功能,如break linenumber，当执行到linenumber那一行的时候被调试程序会停止，等待debugger的进一步操作。<br>断点的实现原理，就是在指定的位置插入断点指令，当被调试的程序运行到断点的时候，产生SIGTRAP信号。该信号被gdb捕获并进行断点命中判定，当gdb判断出这次SIGTRAP是断点命中之后就会转入等待用户输入进行下一步处理，否则继续。</p>
+<p>断点的设置原理: 在程序中设置断点，就是先将该位置的原来的指令保存，然后向该位置写入int 3。当执行到int 3的时候，发生软中断，内核会给子进程发出SIGTRAP信号，当然这个信号会被转发给父进程。然后用保存的指令替换int3,等待恢复运行。<br>断点命中判定:gdb把所有的断点位置都存放在一个链表中，命中判定即把被调试程序当前停止的位置和链表中的断点位置进行比较，看是断点产生的信号，还是无关信号。</p>
+<h2 id="单步调试"><a href="#单步调试" class="headerlink" title="单步调试"></a>单步调试</h2><p>单步跟踪就是指在调试程序的时候，让程序运行一条指令&#x2F;语句后就停下。GDB中常用的命令有next, step, nexti, stepi。单步跟踪又常分为语句单步(next, step)和指令单步(如nexti, stepi)。</p>
+<p>在linux上，指令单步可以通过ptrace来实现。调用ptrace(PTRACE_SINGLESTEP,pid,…)可以使被调试的进程在每执行完一条指令后就触发一个SIGTRAP信号，让GDB运行</p>
+<figure class="highlight bash"><table><tr><td class="gutter"><pre><span class="line">1</span><br><span class="line">2</span><br><span class="line">3</span><br><span class="line">4</span><br><span class="line">5</span><br><span class="line">6</span><br><span class="line">7</span><br><span class="line">8</span><br><span class="line">9</span><br><span class="line">10</span><br><span class="line">11</span><br><span class="line">12</span><br><span class="line">13</span><br><span class="line">14</span><br><span class="line">15</span><br></pre></td><td class="code"><pre><code class="hljs bash">child = fork();  <br>   <span class="hljs-keyword">if</span>(child == 0) &#123;  <br>        execl(<span class="hljs-string">&quot;./HelloWorld&quot;</span>, <span class="hljs-string">&quot;HelloWorld&quot;</span>, NULL);  <br>   &#125;  <br>   <span class="hljs-keyword">else</span> &#123;  <br>       ptrace(PTRACE_ATTACH,child,NULL,NULL);  <br>       <span class="hljs-keyword">while</span>(1)&#123;  <br>       <span class="hljs-built_in">wait</span>(&amp;val);  <br>       <span class="hljs-keyword">if</span>(WIFEXITED(val))  <br>           <span class="hljs-built_in">break</span>;  <br>       count++;  <br>       ptrace(PTRACE_SINGLESTEP,child,NULL,NULL);  <br>       &#125;  <br>   <span class="hljs-built_in">printf</span>(<span class="hljs-string">&quot;Total Instruction number= %d/n&quot;</span>,count);  <br>   &#125;<br></code></pre></td></tr></table></figure>
+
+<h2 id="1、找到目标进程"><a href="#1、找到目标进程" class="headerlink" title="1、找到目标进程"></a>1、找到目标进程</h2><figure class="highlight bash"><table><tr><td class="gutter"><pre><span class="line">1</span><br><span class="line">2</span><br><span class="line">3</span><br><span class="line">4</span><br><span class="line">5</span><br><span class="line">6</span><br><span class="line">7</span><br><span class="line">8</span><br></pre></td><td class="code"><pre><code class="hljs bash">pid_t target_pid;<br><br>// PS命令能找到的进程<br>target_pid = find_pid_of(<span class="hljs-string">&quot;/system/bin/logwrapper&quot;</span>);<br><span class="hljs-keyword">if</span> (-1 == target_pid) &#123;  <br>    <span class="hljs-built_in">printf</span>(<span class="hljs-string">&quot;Can&#x27;t find the process\n&quot;</span>);  <br>    <span class="hljs-built_in">return</span> -1;  <br>&#125;<br></code></pre></td></tr></table></figure>
+<p>找到目标进程的实现方式为：通过proc文件系统来一一比较。</p>
+<p>在Linux上，proc是一个伪文件系统，提供了访问内核数据的方法，一般挂载在“&#x2F;proc”目录</p>
+<p>每个正在运行着的进程都proc下都会有个目录，目录名为pid。</p>
+<p>例如init进程，它的pid为1，所以对应&#x2F;proc&#x2F;1&#x2F;，这个目录下保存的就是Init进程相关的数据。</p>
+<p>找到目标进程的逻辑：</p>
+<p>打开proc目录<br>读取该目录，并转为dirent<br>读取dirent-&gt;d_name值，并转为int号，也就是pid号<br>在循环遍历每一个读取到的pid目录下的cmdline，用\0’分割其中的字符串得到进程的args[]，拿到args[0]，也就是进程的绝对路径<br>匹配进程名是否一致</p>
+<h3 id="dirent：是一个结构体，"><a href="#dirent：是一个结构体，" class="headerlink" title="dirent：是一个结构体，"></a>dirent：是一个结构体，</h3><figure class="highlight bash"><table><tr><td class="gutter"><pre><span class="line">1</span><br><span class="line">2</span><br><span class="line">3</span><br><span class="line">4</span><br><span class="line">5</span><br><span class="line">6</span><br><span class="line">7</span><br><span class="line">8</span><br></pre></td><td class="code"><pre><code class="hljs bash">struct dirent<br>&#123;<br>  long d_ino; /* inode number 索引节点号 */<br>  off_t d_off; /* offset to this dirent 在目录文件中的偏移 */<br>  unsigned short d_reclen; /* length of this d_name 文件名长 */<br>  unsigned char d_type; /* the <span class="hljs-built_in">type</span> of d_name 文件类型 */<br>  char d_name [NAME_MAX+1]; /* file name (null-terminated) 文件名，最长256字符 */<br>&#125;<br></code></pre></td></tr></table></figure>
+
+<p>cmdline：存储的是main方法用的参数，也就是args，args[0]就是进程的绝对路径</p>
+<p>代码如下：</p>
+<figure class="highlight bash"><table><tr><td class="gutter"><pre><span class="line">1</span><br><span class="line">2</span><br><span class="line">3</span><br><span class="line">4</span><br><span class="line">5</span><br><span class="line">6</span><br><span class="line">7</span><br><span class="line">8</span><br><span class="line">9</span><br><span class="line">10</span><br><span class="line">11</span><br><span class="line">12</span><br><span class="line">13</span><br><span class="line">14</span><br><span class="line">15</span><br><span class="line">16</span><br><span class="line">17</span><br><span class="line">18</span><br><span class="line">19</span><br><span class="line">20</span><br><span class="line">21</span><br><span class="line">22</span><br><span class="line">23</span><br><span class="line">24</span><br><span class="line">25</span><br><span class="line">26</span><br><span class="line">27</span><br><span class="line">28</span><br><span class="line">29</span><br><span class="line">30</span><br><span class="line">31</span><br><span class="line">32</span><br><span class="line">33</span><br><span class="line">34</span><br><span class="line">35</span><br><span class="line">36</span><br><span class="line">37</span><br><span class="line">38</span><br><span class="line">39</span><br></pre></td><td class="code"><pre><code class="hljs bash">int find_pid_of(const char *process_name)    <br>&#123;    <br>    int <span class="hljs-built_in">id</span>;    <br>    pid_t pid = -1;    <br>    DIR* <span class="hljs-built_in">dir</span>;    <br>    FILE *fp;    <br>    char filename[32];    <br>    char cmdline[256];    <br>    <br>    struct dirent * entry;    <br>    <br>    <span class="hljs-keyword">if</span> (process_name == NULL)    <br>        <span class="hljs-built_in">return</span> -1;    <br>    <br>    <span class="hljs-built_in">dir</span> = opendir(<span class="hljs-string">&quot;/proc&quot;</span>);    <br>    <span class="hljs-keyword">if</span> (<span class="hljs-built_in">dir</span> == NULL)    <br>        <span class="hljs-built_in">return</span> -1;    <br>    <br>    <span class="hljs-keyword">while</span>((entry = readdir(<span class="hljs-built_in">dir</span>)) != NULL) &#123;    <br>        <span class="hljs-built_in">id</span> = atoi(entry-&gt;d_name);    <br>        <span class="hljs-keyword">if</span> (<span class="hljs-built_in">id</span> != 0) &#123;    <br>            sprintf(filename, <span class="hljs-string">&quot;/proc/%d/cmdline&quot;</span>, <span class="hljs-built_in">id</span>);    <br>            fp = fopen(filename, <span class="hljs-string">&quot;r&quot;</span>);    <br>            <span class="hljs-keyword">if</span> (fp) &#123;    <br>                fgets(cmdline, sizeof(cmdline), fp);    <br>                fclose(fp);    <br>    <br>                <span class="hljs-keyword">if</span> (strcmp(process_name, cmdline) == 0) &#123;    <br>                    /* process found */    <br>                    pid = <span class="hljs-built_in">id</span>;    <br>                    <span class="hljs-built_in">break</span>;    <br>                &#125;    <br>            &#125;    <br>        &#125;    <br>    &#125;    <br>    <br>    closedir(<span class="hljs-built_in">dir</span>);    <br>    <span class="hljs-built_in">return</span> pid;    <br>&#125;<br></code></pre></td></tr></table></figure>
+
+
+<h2 id="2、ptrace跟踪目标进程"><a href="#2、ptrace跟踪目标进程" class="headerlink" title="2、ptrace跟踪目标进程"></a>2、ptrace跟踪目标进程</h2><figure class="highlight bash"><table><tr><td class="gutter"><pre><span class="line">1</span><br><span class="line">2</span><br><span class="line">3</span><br><span class="line">4</span><br><span class="line">5</span><br><span class="line">6</span><br><span class="line">7</span><br><span class="line">8</span><br><span class="line">9</span><br><span class="line">10</span><br><span class="line">11</span><br><span class="line">12</span><br><span class="line">13</span><br><span class="line">14</span><br><span class="line">15</span><br><span class="line">16</span><br><span class="line">17</span><br><span class="line">18</span><br></pre></td><td class="code"><pre><code class="hljs bash"><span class="hljs-keyword">if</span> (ptrace_attach(target_pid) == -1)   <br>&#123; <br>    goto <span class="hljs-built_in">exit</span>;    <br>&#125;<br><br>int ptrace_attach(pid_t pid)    <br>&#123;    <br>    <span class="hljs-keyword">if</span> (ptrace(PTRACE_ATTACH, pid, NULL, 0) &lt; 0) &#123;    <br>        perror(<span class="hljs-string">&quot;ptrace_attach&quot;</span>);    <br>        <span class="hljs-built_in">return</span> -1;    <br>    &#125;    <br>    <br>    int status = 0;    <br>    // 挂起父进程，等待子进程中断或结束<br>    waitpid(pid, &amp;status , WUNTRACED);    <br>    <br>    <span class="hljs-built_in">return</span> 0;    <br>&#125;<br></code></pre></td></tr></table></figure>
+
+<h2 id="3、保存目标进程寄存器的值"><a href="#3、保存目标进程寄存器的值" class="headerlink" title="3、保存目标进程寄存器的值"></a>3、保存目标进程寄存器的值</h2><figure class="highlight bash"><table><tr><td class="gutter"><pre><span class="line">1</span><br><span class="line">2</span><br><span class="line">3</span><br><span class="line">4</span><br><span class="line">5</span><br><span class="line">6</span><br><span class="line">7</span><br><span class="line">8</span><br><span class="line">9</span><br><span class="line">10</span><br><span class="line">11</span><br><span class="line">12</span><br><span class="line">13</span><br><span class="line">14</span><br><span class="line">15</span><br><span class="line">16</span><br><span class="line">17</span><br><span class="line">18</span><br><span class="line">19</span><br></pre></td><td class="code"><pre><code class="hljs bash"><span class="hljs-keyword">if</span> (ptrace_getregs(target_pid, &amp;regs) == -1) <br>&#123;   <br>    goto <span class="hljs-built_in">exit</span>;    <br>&#125;<br><br>// 将读取到的寄存器值存放在regs中<br>int ptrace_getregs(pid_t pid, struct pt_regs * regs)    <br>&#123;    <br>    <span class="hljs-keyword">if</span> (ptrace(PTRACE_GETREGS, pid, NULL, regs) &lt; 0) &#123;    <br>        perror(<span class="hljs-string">&quot;ptrace_getregs: Can not get register values&quot;</span>);    <br>        <span class="hljs-built_in">return</span> -1;    <br>    &#125;    <br>    <br>    <span class="hljs-built_in">return</span> 0;    <br>&#125; <br><br>/* save original registers */    <br>memcpy(&amp;original_regs, &amp;regs, sizeof(regs));<br><br></code></pre></td></tr></table></figure>
+
+<h2 id="4、获得mmap、dlopen等库函数在目标进程中的偏移地址"><a href="#4、获得mmap、dlopen等库函数在目标进程中的偏移地址" class="headerlink" title="4、获得mmap、dlopen等库函数在目标进程中的偏移地址"></a>4、获得mmap、dlopen等库函数在目标进程中的偏移地址</h2><figure class="highlight bash"><table><tr><td class="gutter"><pre><span class="line">1</span><br><span class="line">2</span><br><span class="line">3</span><br><span class="line">4</span><br><span class="line">5</span><br><span class="line">6</span><br><span class="line">7</span><br></pre></td><td class="code"><pre><code class="hljs bash">const char *linker_path = <span class="hljs-string">&quot;/system/bin/linker&quot;</span>;   <br><br>mmap_addr = get_remote_addr(target_pid, libc_path, (void *)mmap);<br>dlopen_addr = get_remote_addr( target_pid, linker_path, (void *)dlopen );    <br>dlsym_addr = get_remote_addr( target_pid, linker_path, (void *)dlsym );    <br>dlclose_addr = get_remote_addr( target_pid, linker_path, (void *)dlclose );    <br>dlerror_addr = get_remote_addr( target_pid, linker_path, (void *)dlerror );<br></code></pre></td></tr></table></figure>
+
+<p>在计算偏移地址时，有个小TIPS，一个相同的库对于不同的进程来说，它的偏移量是恒定的。</p>
+<p>也就是说，A进程载入了mmap，B进程也载入了mmap，那么mmap在A进程中的偏移等于相对于B进程的偏移。</p>
+<h2 id="B-mmap地址-x3D-B-lib库地址-（A-mmap地址-A-lib库地址）"><a href="#B-mmap地址-x3D-B-lib库地址-（A-mmap地址-A-lib库地址）" class="headerlink" title="B.mmap地址 &#x3D; B_lib库地址 + （A.mmap地址 -A_lib库地址）"></a>B.mmap地址 &#x3D; B_lib库地址 + （A.mmap地址 -A_lib库地址）</h2><figure class="highlight bash"><table><tr><td class="gutter"><pre><span class="line">1</span><br><span class="line">2</span><br><span class="line">3</span><br><span class="line">4</span><br><span class="line">5</span><br><span class="line">6</span><br><span class="line">7</span><br><span class="line">8</span><br><span class="line">9</span><br><span class="line">10</span><br><span class="line">11</span><br><span class="line">12</span><br><span class="line">13</span><br><span class="line">14</span><br><span class="line">15</span><br><span class="line">16</span><br><span class="line">17</span><br><span class="line">18</span><br></pre></td><td class="code"><pre><code class="hljs bash">void* get_remote_addr(pid_t target_pid, const char* module_name, void* local_addr)    <br>&#123;    <br>    void* local_handle, *remote_handle;    <br>    <br>    local_handle = get_module_base(-1, module_name);    <br>    remote_handle = get_module_base(target_pid, module_name);    <br>    <br>    DEBUG_PRINT(<span class="hljs-string">&quot;[+] get_remote_addr: local[%x], remote[%x]\n&quot;</span>, local_handle, remote_handle);    <br>    <br>    void * ret_addr = (void *)((uint32_t)local_addr + (uint32_t)remote_handle - (uint32_t)local_handle);    <br>    <br><span class="hljs-comment">#if defined(__i386__)    </span><br>    <span class="hljs-keyword">if</span> (!strcmp(module_name, libc_path)) &#123;    <br>        ret_addr += 2;    <br>    &#125;    <br><span class="hljs-comment">#endif    </span><br>    <span class="hljs-built_in">return</span> ret_addr;    <br>&#125;<br></code></pre></td></tr></table></figure>
+
+<figure class="highlight bash"><table><tr><td class="gutter"><pre><span class="line">1</span><br><span class="line">2</span><br><span class="line">3</span><br><span class="line">4</span><br><span class="line">5</span><br><span class="line">6</span><br><span class="line">7</span><br><span class="line">8</span><br><span class="line">9</span><br><span class="line">10</span><br><span class="line">11</span><br><span class="line">12</span><br><span class="line">13</span><br><span class="line">14</span><br><span class="line">15</span><br><span class="line">16</span><br><span class="line">17</span><br><span class="line">18</span><br><span class="line">19</span><br><span class="line">20</span><br><span class="line">21</span><br><span class="line">22</span><br><span class="line">23</span><br><span class="line">24</span><br><span class="line">25</span><br><span class="line">26</span><br><span class="line">27</span><br><span class="line">28</span><br><span class="line">29</span><br><span class="line">30</span><br><span class="line">31</span><br><span class="line">32</span><br><span class="line">33</span><br><span class="line">34</span><br><span class="line">35</span><br></pre></td><td class="code"><pre><code class="hljs bash">void* get_module_base(pid_t pid, const char* module_name)    <br>&#123;    <br>    FILE *fp;    <br>    long addr = 0;    <br>    char *pch;    <br>    char filename[32];    <br>    char line[1024];    <br>    <br>    <span class="hljs-keyword">if</span> (pid &lt; 0) &#123;    <br>        /* self process */    <br>        snprintf(filename, sizeof(filename), <span class="hljs-string">&quot;/proc/self/maps&quot;</span>, pid);    <br>    &#125; <span class="hljs-keyword">else</span> &#123;    <br>        snprintf(filename, sizeof(filename), <span class="hljs-string">&quot;/proc/%d/maps&quot;</span>, pid);    <br>    &#125;    <br>    <br>    fp = fopen(filename, <span class="hljs-string">&quot;r&quot;</span>);    <br>    <br>    <span class="hljs-keyword">if</span> (fp != NULL) &#123;    <br>        <span class="hljs-keyword">while</span> (fgets(line, sizeof(line), fp)) &#123;    <br>            <span class="hljs-keyword">if</span> (strstr(line, module_name)) &#123;    <br>                pch = strtok( line, <span class="hljs-string">&quot;-&quot;</span> );    <br>                addr = strtoul( pch, NULL, 16 );    <br>    <br>                <span class="hljs-keyword">if</span> (addr == 0x8000)    <br>                    addr = 0;    <br>    <br>                <span class="hljs-built_in">break</span>;    <br>            &#125;    <br>        &#125;    <br>    <br>        fclose(fp) ;    <br>    &#125;    <br>    <br>    <span class="hljs-built_in">return</span> (void *)addr;    <br>&#125;<br></code></pre></td></tr></table></figure>
+
+<h2 id="5、调用mmap在目标进程申请内存空间"><a href="#5、调用mmap在目标进程申请内存空间" class="headerlink" title="5、调用mmap在目标进程申请内存空间"></a>5、调用mmap在目标进程申请内存空间</h2><p>构建mmap调用需要的参数</p>
+<figure class="highlight bash"><table><tr><td class="gutter"><pre><span class="line">1</span><br><span class="line">2</span><br><span class="line">3</span><br><span class="line">4</span><br><span class="line">5</span><br><span class="line">6</span><br><span class="line">7</span><br><span class="line">8</span><br><span class="line">9</span><br><span class="line">10</span><br><span class="line">11</span><br><span class="line">12</span><br></pre></td><td class="code"><pre><code class="hljs bash">/* call mmap */    <br>parameters[0] = 0;  // addr    <br>parameters[1] = 0x4000; // size    <br>parameters[2] = PROT_READ | PROT_WRITE | PROT_EXEC;  // prot    <br>parameters[3] =  MAP_ANONYMOUS | MAP_PRIVATE; // flags    <br>parameters[4] = 0; //fd    <br>parameters[5] = 0; //offset    <br><br><span class="hljs-keyword">if</span> (ptrace_call_wrapper(target_pid, <span class="hljs-string">&quot;mmap&quot;</span>, mmap_addr, parameters, 6, &amp;regs) == -1)  <br>&#123;<br>    goto <span class="hljs-built_in">exit</span>;    <br>&#125;<br></code></pre></td></tr></table></figure>
+
+<figure class="highlight bash"><table><tr><td class="gutter"><pre><span class="line">1</span><br><span class="line">2</span><br><span class="line">3</span><br><span class="line">4</span><br><span class="line">5</span><br><span class="line">6</span><br><span class="line">7</span><br><span class="line">8</span><br><span class="line">9</span><br><span class="line">10</span><br><span class="line">11</span><br><span class="line">12</span><br></pre></td><td class="code"><pre><code class="hljs bash">int ptrace_call_wrapper(pid_t target_pid, const char * func_name, void * func_addr, long * parameters, int param_num, struct pt_regs * regs)     <br>&#123;    <br>  DEBUG_PRINT(<span class="hljs-string">&quot;[+] Calling %s in target process.\n&quot;</span>, func_name);    <br>  <span class="hljs-keyword">if</span> (ptrace_call(target_pid, (uint32_t)func_addr, parameters, param_num, regs) == -1)    <br>      <span class="hljs-built_in">return</span> -1;    <br><br>  <span class="hljs-keyword">if</span> (ptrace_getregs(target_pid, regs) == -1)    <br>      <span class="hljs-built_in">return</span> -1;    <br>  DEBUG_PRINT(<span class="hljs-string">&quot;[+] Target process returned from %s, return value=%x, pc=%x \n&quot;</span>,     <br>          func_name, ptrace_retval(regs), ptrace_ip(regs));    <br>  <span class="hljs-built_in">return</span> 0;  <br>&#125;<br></code></pre></td></tr></table></figure>
+
+<p>这里做个平台判断，区分arm和x86，他们的实现方式不一样。下面只介绍arm</p>
+<p>首先将前面构建的mmap参数放入寄存器当中，对于arm来说，R0~R3是存放参数的，对于超过4位的参数一律放在栈中<br>将目标进程的PC寄存器指向mmap的函数地址，重置CPSR状态寄存器，重置LR寄存器<br>将配置完的寄存器应用到进程中</p>
+<figure class="highlight bash"><table><tr><td class="gutter"><pre><span class="line">1</span><br><span class="line">2</span><br><span class="line">3</span><br><span class="line">4</span><br><span class="line">5</span><br><span class="line">6</span><br><span class="line">7</span><br><span class="line">8</span><br><span class="line">9</span><br><span class="line">10</span><br><span class="line">11</span><br><span class="line">12</span><br><span class="line">13</span><br><span class="line">14</span><br><span class="line">15</span><br><span class="line">16</span><br><span class="line">17</span><br><span class="line">18</span><br><span class="line">19</span><br><span class="line">20</span><br><span class="line">21</span><br><span class="line">22</span><br><span class="line">23</span><br><span class="line">24</span><br><span class="line">25</span><br><span class="line">26</span><br><span class="line">27</span><br><span class="line">28</span><br><span class="line">29</span><br><span class="line">30</span><br><span class="line">31</span><br><span class="line">32</span><br><span class="line">33</span><br><span class="line">34</span><br><span class="line">35</span><br><span class="line">36</span><br><span class="line">37</span><br><span class="line">38</span><br><span class="line">39</span><br><span class="line">40</span><br><span class="line">41</span><br><span class="line">42</span><br><span class="line">43</span><br><span class="line">44</span><br><span class="line">45</span><br><span class="line">46</span><br><span class="line">47</span><br><span class="line">48</span><br><span class="line">49</span><br><span class="line">50</span><br><span class="line">51</span><br><span class="line">52</span><br><span class="line">53</span><br><span class="line">54</span><br><span class="line">55</span><br><span class="line">56</span><br><span class="line">57</span><br><span class="line">58</span><br><span class="line">59</span><br><span class="line">60</span><br><span class="line">61</span><br><span class="line">62</span><br><span class="line">63</span><br><span class="line">64</span><br><span class="line">65</span><br><span class="line">66</span><br><span class="line">67</span><br><span class="line">68</span><br><span class="line">69</span><br><span class="line">70</span><br><span class="line">71</span><br><span class="line">72</span><br><span class="line">73</span><br><span class="line">74</span><br><span class="line">75</span><br><span class="line">76</span><br><span class="line">77</span><br><span class="line">78</span><br><span class="line">79</span><br><span class="line">80</span><br><span class="line">81</span><br><span class="line">82</span><br><span class="line">83</span><br><span class="line">84</span><br><span class="line">85</span><br><span class="line">86</span><br><span class="line">87</span><br><span class="line">88</span><br></pre></td><td class="code"><pre><code class="hljs bash"><br><span class="hljs-comment">#if defined(__arm__)    </span><br>int ptrace_call(pid_t pid, uint32_t addr, long *params, uint32_t num_params, struct pt_regs* regs)    <br>&#123;    <br>    uint32_t i;   <br>  	// 参数先放寄存器中，R0~R3<br>    <span class="hljs-keyword">for</span> (i = 0; i &lt; num_params &amp;&amp; i &lt; 4; i ++) &#123;    <br>        regs-&gt;uregs[i] = params[i];    <br>    &#125;    <br>    <br>    // 多于4位的放在栈中   <br>    <span class="hljs-keyword">if</span> (i &lt; num_params) &#123;    <br>        regs-&gt;ARM_sp -= (num_params - i) * sizeof(long) ;    <br>        ptrace_writedata(pid, (void *)regs-&gt;ARM_sp, (uint8_t *)&amp;params[i], (num_params - i) * sizeof(long));    <br>    &#125;    <br>    <br>  	// 将ARM的PC寄存器指向addr，也就是上面传来的需要调用的函数地址<br>    regs-&gt;ARM_pc = addr;    <br>  	<br>    // 判断ARM当前所处的状态是thumb还是arm，它们的区别在于thumb是16位，arm是32位。属于arm的子集<br>    // 然后重置CPSR程序状态寄存器<br>    <span class="hljs-keyword">if</span> (regs-&gt;ARM_pc &amp; 1) &#123;    <br>        /* thumb */    <br>        regs-&gt;ARM_pc &amp;= (~1u);    <br>        regs-&gt;ARM_cpsr |= CPSR_T_MASK;    <br>    &#125; <span class="hljs-keyword">else</span> &#123;    <br>        /* arm */    <br>        regs-&gt;ARM_cpsr &amp;= ~CPSR_T_MASK;    <br>    &#125;    <br>    <br>    // 重置LR寄存器<br>    // LR寄存器存放的是子程序的返回地址<br>    regs-&gt;ARM_lr = 0;        <br>    <br>  	// 设置寄存器的值<br>    <span class="hljs-keyword">if</span> (ptrace_setregs(pid, regs) == -1     <br>            || ptrace_continue(pid) == -1) &#123;    <br>        <span class="hljs-built_in">printf</span>(<span class="hljs-string">&quot;error\n&quot;</span>);    <br>        <span class="hljs-built_in">return</span> -1;    <br>    &#125;    <br>    <br>    int <span class="hljs-built_in">stat</span> = 0;  <br>    waitpid(pid, &amp;<span class="hljs-built_in">stat</span>, WUNTRACED);  <br>    <span class="hljs-keyword">while</span> (<span class="hljs-built_in">stat</span> != 0xb7f) &#123;  <br>        <span class="hljs-keyword">if</span> (ptrace_continue(pid) == -1) &#123;  <br>            <span class="hljs-built_in">printf</span>(<span class="hljs-string">&quot;error\n&quot;</span>);  <br>            <span class="hljs-built_in">return</span> -1;  <br>        &#125;  <br>        waitpid(pid, &amp;<span class="hljs-built_in">stat</span>, WUNTRACED);  <br>    &#125;  <br>    <br>    <span class="hljs-built_in">return</span> 0;    <br>&#125;    <br>    <br><span class="hljs-comment">#elif defined(__i386__)    </span><br>long ptrace_call(pid_t pid, uint32_t addr, long *params, uint32_t num_params, struct user_regs_struct * regs)    <br>&#123;    <br>    regs-&gt;esp -= (num_params) * sizeof(long) ;    <br>    ptrace_writedata(pid, (void *)regs-&gt;esp, (uint8_t *)params, (num_params) * sizeof(long));    <br>    <br>    long tmp_addr = 0x00;    <br>    regs-&gt;esp -= sizeof(long);    <br>    ptrace_writedata(pid, regs-&gt;esp, (char *)&amp;tmp_addr, sizeof(tmp_addr));     <br>    <br>    regs-&gt;eip = addr;    <br>    <br>    <span class="hljs-keyword">if</span> (ptrace_setregs(pid, regs) == -1     <br>            || ptrace_continue( pid) == -1) &#123;    <br>        <span class="hljs-built_in">printf</span>(<span class="hljs-string">&quot;error\n&quot;</span>);    <br>        <span class="hljs-built_in">return</span> -1;    <br>    &#125;    <br>    <br>    int <span class="hljs-built_in">stat</span> = 0;  <br>    waitpid(pid, &amp;<span class="hljs-built_in">stat</span>, WUNTRACED);  <br>    <span class="hljs-keyword">while</span> (<span class="hljs-built_in">stat</span> != 0xb7f) &#123;  <br>        <span class="hljs-keyword">if</span> (ptrace_continue(pid) == -1) &#123;  <br>            <span class="hljs-built_in">printf</span>(<span class="hljs-string">&quot;error\n&quot;</span>);  <br>            <span class="hljs-built_in">return</span> -1;  <br>        &#125;  <br>        waitpid(pid, &amp;<span class="hljs-built_in">stat</span>, WUNTRACED);  <br>    &#125;  <br>    <br>    <span class="hljs-built_in">return</span> 0;    <br>&#125;    <br><span class="hljs-comment">#else     </span><br><span class="hljs-comment">#error &quot;Not supported&quot;</span><br><span class="hljs-comment">#endif</span><br><br></code></pre></td></tr></table></figure>
+<figure class="highlight bash"><table><tr><td class="gutter"><pre><span class="line">1</span><br><span class="line">2</span><br><span class="line">3</span><br><span class="line">4</span><br><span class="line">5</span><br><span class="line">6</span><br><span class="line">7</span><br><span class="line">8</span><br><span class="line">9</span><br><span class="line">10</span><br><span class="line">11</span><br><span class="line">12</span><br><span class="line">13</span><br><span class="line">14</span><br><span class="line">15</span><br><span class="line">16</span><br><span class="line">17</span><br><span class="line">18</span><br><span class="line">19</span><br><span class="line">20</span><br><span class="line">21</span><br><span class="line">22</span><br><span class="line">23</span><br><span class="line">24</span><br><span class="line">25</span><br><span class="line">26</span><br><span class="line">27</span><br><span class="line">28</span><br><span class="line">29</span><br><span class="line">30</span><br><span class="line">31</span><br><span class="line">32</span><br><span class="line">33</span><br><span class="line">34</span><br></pre></td><td class="code"><pre><code class="hljs bash">int ptrace_writedata(pid_t pid, uint8_t *dest, uint8_t *data, size_t size)    <br>&#123;    <br>    uint32_t i, j, remain;    <br>    uint8_t *laddr;    <br>    <br>    union u &#123;    <br>        long val;    <br>        char chars[sizeof(long)];    <br>    &#125; d;    <br>    <br>    j = size / 4;    <br>    remain = size % 4;    <br>    <br>    laddr = data;    <br>    <br>    <span class="hljs-keyword">for</span> (i = 0; i &lt; j; i ++) &#123;    <br>        memcpy(d.chars, laddr, 4);    <br>        ptrace(PTRACE_POKETEXT, pid, dest, d.val);    <br>    <br>        dest  += 4;    <br>        laddr += 4;    <br>    &#125;    <br>    <br>    <span class="hljs-keyword">if</span> (remain &gt; 0) &#123;    <br>        d.val = ptrace(PTRACE_PEEKTEXT, pid, dest, 0);    <br>        <span class="hljs-keyword">for</span> (i = 0; i &lt; remain; i ++) &#123;    <br>            d.chars[i] = *laddr ++;    <br>        &#125;    <br>    <br>        ptrace(PTRACE_POKETEXT, pid, dest, d.val);    <br>    &#125;    <br>    <br>    <span class="hljs-built_in">return</span> 0;    <br>&#125;<br></code></pre></td></tr></table></figure>
+
+
+
+<figure class="highlight bash"><table><tr><td class="gutter"><pre><span class="line">1</span><br><span class="line">2</span><br><span class="line">3</span><br><span class="line">4</span><br><span class="line">5</span><br><span class="line">6</span><br><span class="line">7</span><br><span class="line">8</span><br><span class="line">9</span><br><span class="line">10</span><br></pre></td><td class="code"><pre><code class="hljs bash">// 设置寄存器<br>int ptrace_setregs(pid_t pid, struct pt_regs * regs)    <br>&#123;    <br>    <span class="hljs-keyword">if</span> (ptrace(PTRACE_SETREGS, pid, NULL, regs) &lt; 0) &#123;    <br>        perror(<span class="hljs-string">&quot;ptrace_setregs: Can not set register values&quot;</span>);    <br>        <span class="hljs-built_in">return</span> -1;    <br>    &#125;    <br>    <br>    <span class="hljs-built_in">return</span> 0;    <br>&#125;<br></code></pre></td></tr></table></figure>
+
+
+<h2 id="写入Shellcode"><a href="#写入Shellcode" class="headerlink" title="写入Shellcode"></a>写入Shellcode</h2><p>首先拿到mmap映射的基地址，方便后续操作</p>
+<figure class="highlight bash"><table><tr><td class="gutter"><pre><span class="line">1</span><br><span class="line">2</span><br><span class="line">3</span><br><span class="line">4</span><br><span class="line">5</span><br><span class="line">6</span><br><span class="line">7</span><br><span class="line">8</span><br><span class="line">9</span><br><span class="line">10</span><br><span class="line">11</span><br></pre></td><td class="code"><pre><code class="hljs bash">map_base = ptrace_retval(&amp;regs);   <br>long ptrace_retval(struct pt_regs * regs)    <br>&#123;    <br><span class="hljs-comment">#if defined(__arm__)    </span><br>    <span class="hljs-built_in">return</span> regs-&gt;ARM_r0;    <br><span class="hljs-comment">#elif defined(__i386__)    </span><br>    <span class="hljs-built_in">return</span> regs-&gt;eax;    <br><span class="hljs-comment">#else    </span><br><span class="hljs-comment">#error &quot;Not supported&quot;    </span><br><span class="hljs-comment">#endif    </span><br>&#125;<br></code></pre></td></tr></table></figure>
+
+<p>将我们的Shellcode写入到目标进程中</p>
+<figure class="highlight bash"><table><tr><td class="gutter"><pre><span class="line">1</span><br></pre></td><td class="code"><pre><code class="hljs bash">ptrace_writedata(target_pid, map_base, library_path, strlen(library_path) + 1);<br></code></pre></td></tr></table></figure>
+
+<h2 id="6、执行Shellcode"><a href="#6、执行Shellcode" class="headerlink" title="6、执行Shellcode"></a>6、执行Shellcode</h2><p>构建dlopen的执行参数，打开shellcode</p>
+<figure class="highlight bash"><table><tr><td class="gutter"><pre><span class="line">1</span><br><span class="line">2</span><br><span class="line">3</span><br><span class="line">4</span><br><span class="line">5</span><br><span class="line">6</span><br><span class="line">7</span><br></pre></td><td class="code"><pre><code class="hljs bash">parameters[0] = map_base;       <br>parameters[1] = RTLD_NOW| RTLD_GLOBAL;     <br><br><span class="hljs-keyword">if</span> (ptrace_call_wrapper(target_pid, <span class="hljs-string">&quot;dlopen&quot;</span>, dlopen_addr, parameters, 2, &amp;regs) == -1)  <br>&#123;<br>	goto <span class="hljs-built_in">exit</span>;     <br>&#125;<br></code></pre></td></tr></table></figure>
+
+<p>拿到shellcode的句柄，找到shellcode中目标方法的偏移地址，执行dlsym加载</p>
+<figure class="highlight bash"><table><tr><td class="gutter"><pre><span class="line">1</span><br><span class="line">2</span><br><span class="line">3</span><br><span class="line">4</span><br><span class="line">5</span><br><span class="line">6</span><br><span class="line">7</span><br><span class="line">8</span><br><span class="line">9</span><br><span class="line">10</span><br><span class="line">11</span><br><span class="line">12</span><br><span class="line">13</span><br><span class="line">14</span><br><span class="line">15</span><br><span class="line">16</span><br><span class="line">17</span><br><span class="line">18</span><br><span class="line">19</span><br></pre></td><td class="code"><pre><code class="hljs bash">void * sohandle = ptrace_retval(&amp;regs); <br><br><span class="hljs-comment">#define FUNCTION_NAME_ADDR_OFFSET       0x100    </span><br>    ptrace_writedata(target_pid, map_base + FUNCTION_NAME_ADDR_OFFSET, function_name, strlen(function_name) + 1);    <br>    parameters[0] = sohandle;       <br>    parameters[1] = map_base + FUNCTION_NAME_ADDR_OFFSET;     <br>    <br>    <span class="hljs-keyword">if</span> (ptrace_call_wrapper(target_pid, <span class="hljs-string">&quot;dlsym&quot;</span>, dlsym_addr, parameters, 2, &amp;regs) == -1)    <br>        goto <span class="hljs-built_in">exit</span>;    <br>    <br>    void * hook_entry_addr = ptrace_retval(&amp;regs);    <br>    DEBUG_PRINT(<span class="hljs-string">&quot;hook_entry_addr = %p\n&quot;</span>, hook_entry_addr);    <br>    <br><span class="hljs-comment">#define FUNCTION_PARAM_ADDR_OFFSET      0x200    </span><br>    ptrace_writedata(target_pid, map_base + FUNCTION_PARAM_ADDR_OFFSET, param, strlen(param) + 1);    <br>    parameters[0] = map_base + FUNCTION_PARAM_ADDR_OFFSET;      <br>  <br>    <span class="hljs-keyword">if</span> (ptrace_call_wrapper(target_pid, <span class="hljs-string">&quot;hook_entry&quot;</span>, hook_entry_addr, parameters, 1, &amp;regs) == -1)    <br>        goto <span class="hljs-built_in">exit</span>;<br></code></pre></td></tr></table></figure>
+
+
+<h2 id="7、恢复原so的状态，detach"><a href="#7、恢复原so的状态，detach" class="headerlink" title="7、恢复原so的状态，detach"></a>7、恢复原so的状态，detach</h2><figure class="highlight bash"><table><tr><td class="gutter"><pre><span class="line">1</span><br><span class="line">2</span><br><span class="line">3</span><br><span class="line">4</span><br><span class="line">5</span><br><span class="line">6</span><br><span class="line">7</span><br><span class="line">8</span><br><span class="line">9</span><br><span class="line">10</span><br><span class="line">11</span><br></pre></td><td class="code"><pre><code class="hljs bash"><span class="hljs-built_in">printf</span>(<span class="hljs-string">&quot;Press enter to dlclose and detach\n&quot;</span>);    <br>getchar();    <br>parameters[0] = sohandle;       <br><br><span class="hljs-keyword">if</span> (ptrace_call_wrapper(target_pid, <span class="hljs-string">&quot;dlclose&quot;</span>, dlclose, parameters, 1, &amp;regs) == -1)    <br>    goto <span class="hljs-built_in">exit</span>;    <br><br>/* restore */    <br>ptrace_setregs(target_pid, &amp;original_regs);    <br>ptrace_detach(target_pid);    <br>ret = 0;<br></code></pre></td></tr></table></figure>
+
+<figure class="highlight bash"><table><tr><td class="gutter"><pre><span class="line">1</span><br><span class="line">2</span><br><span class="line">3</span><br><span class="line">4</span><br><span class="line">5</span><br><span class="line">6</span><br><span class="line">7</span><br><span class="line">8</span><br><span class="line">9</span><br></pre></td><td class="code"><pre><code class="hljs bash">int ptrace_detach(pid_t pid)    <br>&#123;    <br>    <span class="hljs-keyword">if</span> (ptrace(PTRACE_DETACH, pid, NULL, 0) &lt; 0) &#123;    <br>        perror(<span class="hljs-string">&quot;ptrace_detach&quot;</span>);    <br>        <span class="hljs-built_in">return</span> -1;    <br>    &#125;    <br>    <br>    <span class="hljs-built_in">return</span> 0;    <br>&#125;<br></code></pre></td></tr></table></figure>
+
+<h1 id="结束"><a href="#结束" class="headerlink" title="结束"></a>结束</h1>
+                
+              </div>
+            
+            <hr/>
+            <div>
+              <div class="post-metas my-3">
+  
+  
+</div>
+
+
+              
+  
+
+  <div class="license-box my-3">
+    <div class="license-title">
+      <div>ptrace注入so</div>
+      <div>http://example.com/2022/06/27/ptrace注入so/</div>
+    </div>
+    <div class="license-meta">
+      
+        <div class="license-meta-item">
+          <div>作者</div>
+          <div>听说你是小兔叽</div>
+        </div>
+      
+      
+        <div class="license-meta-item license-meta-date">
+          <div>发布于</div>
+          <div>2022年6月27日</div>
+        </div>
+      
+      
+        <div class="license-meta-item license-meta-date">
+          <div>更新于</div>
+          <div>2022年11月14日</div>
+        </div>
+      
+      
+        <div class="license-meta-item">
+          <div>许可协议</div>
+          <div>
+            
+              
+              
+                <a target="_blank" href="https://creativecommons.org/licenses/by-nc-sa/4.0/">
+                  <span class="hint--top hint--rounded" aria-label="BY - 署名">
+                    <i class="iconfont icon-by"></i>
+                  </span>
+                </a>
+              
+                <a target="_blank" href="https://creativecommons.org/licenses/by-nc-sa/4.0/">
+                  <span class="hint--top hint--rounded" aria-label="NC - 非商业性使用">
+                    <i class="iconfont icon-nc"></i>
+                  </span>
+                </a>
+              
+                <a target="_blank" href="https://creativecommons.org/licenses/by-nc-sa/4.0/">
+                  <span class="hint--top hint--rounded" aria-label="SA - 相同方式共享">
+                    <i class="iconfont icon-sa"></i>
+                  </span>
+                </a>
+              
+            
+          </div>
+        </div>
+      
+    </div>
+    <div class="license-icon iconfont"></div>
+  </div>
+
+
+
+              
+                <div class="post-prevnext my-3">
+                  <article class="post-prev col-6">
+                    
+                    
+                      <a href="/2022/11/14/Magisk%E6%B3%A8%E5%85%A5app%E5%B9%B6%E5%B5%8C%E5%85%A5imgui/" title="Magisk注入app并嵌入imgui">
+                        <i class="iconfont icon-arrowleft"></i>
+                        <span class="hidden-mobile">Magisk注入app并嵌入imgui</span>
+                        <span class="visible-mobile">上一篇</span>
+                      </a>
+                    
+                  </article>
+                  <article class="post-next col-6">
+                    
+                    
+                      <a href="/2022/06/26/Frida%E5%B7%A5%E4%BD%9C%E5%8E%9F%E7%90%86%E5%AD%A6%E4%B9%A0/" title="Frida工作原理学习">
+                        <span class="hidden-mobile">Frida工作原理学习</span>
+                        <span class="visible-mobile">下一篇</span>
+                        <i class="iconfont icon-arrowright"></i>
+                      </a>
+                    
+                  </article>
+                </div>
+              
+            </div>
+
+            
+          </article>
+        </div>
+      </div>
+    </div>
+
+    <div class="side-col d-none d-lg-block col-lg-2">
+      
+  <aside class="sidebar" style="margin-left: -1rem">
+    <div id="toc">
+  <p class="toc-header"><i class="iconfont icon-list"></i>&nbsp;目录</p>
+  <div class="toc-body" id="toc-body"></div>
+</div>
+
+
+
+  </aside>
+
+
+    </div>
+  </div>
+</div>
+
+
+
+
+
+  
+
+
+
+  
+
+
+
+  
+
+
+
+  
+
+
+
+  
+
+
+
+
+
+
+
+    
+
+    
+      <a id="scroll-top-button" aria-label="TOP" href="#" role="button">
+        <i class="iconfont icon-arrowup" aria-hidden="true"></i>
+      </a>
+    
+
+    
+      <div class="modal fade" id="modalSearch" tabindex="-1" role="dialog" aria-labelledby="ModalLabel"
+     aria-hidden="true">
+  <div class="modal-dialog modal-dialog-scrollable modal-lg" role="document">
+    <div class="modal-content">
+      <div class="modal-header text-center">
+        <h4 class="modal-title w-100 font-weight-bold">搜索</h4>
+        <button type="button" id="local-search-close" class="close" data-dismiss="modal" aria-label="Close">
+          <span aria-hidden="true">&times;</span>
+        </button>
+      </div>
+      <div class="modal-body mx-3">
+        <div class="md-form mb-5">
+          <input type="text" id="local-search-input" class="form-control validate">
+          <label data-error="x" data-success="v" for="local-search-input">关键词</label>
+        </div>
+        <div class="list-group" id="local-search-result"></div>
+      </div>
+    </div>
+  </div>
+</div>
+
+    
+
+    
+  </main>
+
+  <footer>
+    <div class="footer-inner">
+  
+    <div class="footer-content">
+       <a href="https://hexo.io" target="_blank" rel="nofollow noopener"><span>Hexo</span></a> <i class="iconfont icon-love"></i> <a href="https://github.com/fluid-dev/hexo-theme-fluid" target="_blank" rel="nofollow noopener"><span>Fluid</span></a> 
+    </div>
+  
+  
+  
+  
+</div>
+
+  </footer>
+
+  <!-- Scripts -->
+  
+  <script  src="https://lib.baomitu.com/nprogress/0.2.0/nprogress.min.js" ></script>
+  <link  rel="stylesheet" href="https://lib.baomitu.com/nprogress/0.2.0/nprogress.min.css" />
+
+  <script>
+    NProgress.configure({"showSpinner":false,"trickleSpeed":100})
+    NProgress.start()
+    window.addEventListener('load', function() {
+      NProgress.done();
+    })
+  </script>
+
+
+<script  src="https://lib.baomitu.com/jquery/3.6.0/jquery.min.js" ></script>
+<script  src="https://lib.baomitu.com/twitter-bootstrap/4.6.1/js/bootstrap.min.js" ></script>
+<script  src="/js/events.js" ></script>
+<script  src="/js/plugins.js" ></script>
+
+
+  <script  src="https://lib.baomitu.com/typed.js/2.0.12/typed.min.js" ></script>
+  <script>
+    (function (window, document) {
+      var typing = Fluid.plugins.typing;
+      var subtitle = document.getElementById('subtitle');
+      if (!subtitle || !typing) {
+        return;
+      }
+      var text = subtitle.getAttribute('data-typed-text');
+      
+        typing(text);
+      
+    })(window, document);
+  </script>
+
+
+
+
+  
+    <script  src="/js/img-lazyload.js" ></script>
+  
+
+
+
+
+  
+<script>
+  Fluid.utils.createScript('https://lib.baomitu.com/tocbot/4.18.2/tocbot.min.js', function() {
+    var toc = jQuery('#toc');
+    if (toc.length === 0 || !window.tocbot) { return; }
+    var boardCtn = jQuery('#board-ctn');
+    var boardTop = boardCtn.offset().top;
+
+    window.tocbot.init(Object.assign({
+      tocSelector     : '#toc-body',
+      contentSelector : '.markdown-body',
+      linkClass       : 'tocbot-link',
+      activeLinkClass : 'tocbot-active-link',
+      listClass       : 'tocbot-list',
+      isCollapsedClass: 'tocbot-is-collapsed',
+      collapsibleClass: 'tocbot-is-collapsible',
+      scrollSmooth    : true,
+      includeTitleTags: true,
+      headingsOffset  : -boardTop,
+    }, CONFIG.toc));
+    if (toc.find('.toc-list-item').length > 0) {
+      toc.css('visibility', 'visible');
+    }
+
+    Fluid.events.registerRefreshCallback(function() {
+      if ('tocbot' in window) {
+        tocbot.refresh();
+        var toc = jQuery('#toc');
+        if (toc.length === 0 || !tocbot) {
+          return;
+        }
+        if (toc.find('.toc-list-item').length > 0) {
+          toc.css('visibility', 'visible');
+        }
+      }
+    });
+  });
+</script>
+
+
+  <script src=https://lib.baomitu.com/clipboard.js/2.0.11/clipboard.min.js></script>
+
+  <script>Fluid.plugins.codeWidget();</script>
+
+
+  
+<script>
+  Fluid.utils.createScript('https://lib.baomitu.com/anchor-js/4.3.1/anchor.min.js', function() {
+    window.anchors.options = {
+      placement: CONFIG.anchorjs.placement,
+      visible  : CONFIG.anchorjs.visible
+    };
+    if (CONFIG.anchorjs.icon) {
+      window.anchors.options.icon = CONFIG.anchorjs.icon;
+    }
+    var el = (CONFIG.anchorjs.element || 'h1,h2,h3,h4,h5,h6').split(',');
+    var res = [];
+    for (var item of el) {
+      res.push('.markdown-body > ' + item.trim());
+    }
+    if (CONFIG.anchorjs.placement === 'left') {
+      window.anchors.options.class = 'anchorjs-link-left';
+    }
+    window.anchors.add(res.join(', '));
+
+    Fluid.events.registerRefreshCallback(function() {
+      if ('anchors' in window) {
+        anchors.removeAll();
+        var el = (CONFIG.anchorjs.element || 'h1,h2,h3,h4,h5,h6').split(',');
+        var res = [];
+        for (var item of el) {
+          res.push('.markdown-body > ' + item.trim());
+        }
+        if (CONFIG.anchorjs.placement === 'left') {
+          anchors.options.class = 'anchorjs-link-left';
+        }
+        anchors.add(res.join(', '));
+      }
+    });
+  });
+</script>
+
+
+  
+<script>
+  Fluid.utils.createScript('https://lib.baomitu.com/fancybox/3.5.7/jquery.fancybox.min.js', function() {
+    Fluid.plugins.fancyBox();
+  });
+</script>
+
+
+  <script>Fluid.plugins.imageCaption();</script>
+
+  <script  src="/js/local-search.js" ></script>
+
+
+
+
+
+<!-- 主题的启动项，将它保持在最底部 -->
+<!-- the boot of the theme, keep it at the bottom -->
+<script  src="/js/boot.js" ></script>
+
+
+  
+
+  <noscript>
+    <div class="noscript-warning">博客在允许 JavaScript 运行的环境下浏览效果更佳</div>
+  </noscript>
+</body>
+</html>
