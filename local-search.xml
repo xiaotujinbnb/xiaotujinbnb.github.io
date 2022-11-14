@@ -4,6 +4,19 @@
   
   
   <entry>
+    <title>Android内存读写断点--mprotect</title>
+    <link href="/2022/11/14/Android%E5%86%85%E5%AD%98%E8%AF%BB%E5%86%99%E6%96%AD%E7%82%B9-mprotect/"/>
+    <url>/2022/11/14/Android%E5%86%85%E5%AD%98%E8%AF%BB%E5%86%99%E6%96%AD%E7%82%B9-mprotect/</url>
+    
+    <content type="html"><![CDATA[<p>这几天听朋友说 GG 可以在不加载驱动的情况下设置内存读写断点，类似 PC 上 ce 的 “查看谁访问了该内存” 功能。网上也查了下资料，发现其实不难.</p><p>简单来说，就是先注册一个异常处理函数，然后把内存属性设置为无法访问 (PROT_NONE), 然后当程序读取或改写这段内存后会触发异常，在异常处理函数里获取到 pc 寄存器的值后恢复内存属性即可.</p><ol><li>注册异常处理函数<figure class="highlight bash"><table><tr><td class="gutter"><pre><span class="line">1</span><br><span class="line">2</span><br><span class="line">3</span><br><span class="line">4</span><br><span class="line">5</span><br><span class="line">6</span><br><span class="line">7</span><br><span class="line">8</span><br><span class="line">9</span><br><span class="line">10</span><br><span class="line">11</span><br><span class="line">12</span><br><span class="line">13</span><br><span class="line">14</span><br><span class="line">15</span><br><span class="line">16</span><br><span class="line">17</span><br><span class="line">18</span><br></pre></td><td class="code"><pre><code class="hljs bash">struct sigaction act ;<br>memset(&amp;act ,0 ,sizeof(act));<br>act.sa_sigaction = &amp;handler ; //异常处理函数<br>act.sa_flags =SA_SIGINFO |SA_RESETHAND|SA_NODEFER;<br>sigaction(SIGSEGV,&amp;act ,NULL); //注册异常处理函数,SIGSEGV表示读取或写入无效内存的错误类型<br>void handler (int sig ,siginfo_t *siginfo , void * context)&#123;<br>    //匹配我们要监控的地址<br>    <span class="hljs-keyword">if</span> (siginfo-&gt;si_addr==&amp;i)&#123;<br>        ucontext_t ctx=(*(ucontext_t*)context);<br>        LOGD(<span class="hljs-string">&quot;pc = 0x%llx \n&quot;</span>,ctx.uc_mcontext.pc); //查看是哪个代码访问了这段内存<br>    &#125;<br>    //还原原来内存的属性<br>    int pageSize = getpagesize();<br>    unsigned long addr= reinterpret_cast&lt;unsigned long&gt;(&amp;start);<br>    unsigned long mem = addr &amp; (~(pageSize - 1));<br>    LOGD(<span class="hljs-string">&quot;mprotect:%d&quot;</span>,mprotect(reinterpret_cast&lt;void *&gt;(mem), pageSize, PROT_READ|PROT_WRITE));<br>    <span class="hljs-built_in">return</span>;<br>&#125;<br></code></pre></td></tr></table></figure></li><li>设置要读取的内存的属性，注意这个内存必须按页对齐。这里以读取 i 为例<figure class="highlight bash"><table><tr><td class="gutter"><pre><span class="line">1</span><br><span class="line">2</span><br><span class="line">3</span><br><span class="line">4</span><br><span class="line">5</span><br><span class="line">6</span><br></pre></td><td class="code"><pre><code class="hljs bash">int pageSize = getpagesize();<br>unsigned long addr= reinterpret_cast&lt;unsigned long&gt;(&amp;i);<br>start = addr &amp; (~(pageSize - 1)); //按页对齐,start表示对齐后的内存地址<br>LOGD(<span class="hljs-string">&quot;start：%p &quot;</span>,start);<br>LOGD(<span class="hljs-string">&quot;pageSize：%p &quot;</span>,pageSize);<br>LOGD(<span class="hljs-string">&quot;mprotect:%d&quot;</span>,mprotect(reinterpret_cast&lt;void *&gt;(start), pageSize, PROT_NONE)); //0表示成功,-1表示失败<br></code></pre></td></tr></table></figure>效果如下:<br><img src="/Android%E5%86%85%E5%AD%98%E8%AF%BB%E5%86%99%E6%96%AD%E7%82%B9-mprotect/0.png" alt="image"></li></ol>]]></content>
+    
+    
+    
+  </entry>
+  
+  
+  
+  <entry>
     <title>Android内存读写检测</title>
     <link href="/2022/11/14/Android%E5%86%85%E5%AD%98%E8%AF%BB%E5%86%99%E6%A3%80%E6%B5%8B/"/>
     <url>/2022/11/14/Android%E5%86%85%E5%AD%98%E8%AF%BB%E5%86%99%E6%A3%80%E6%B5%8B/</url>

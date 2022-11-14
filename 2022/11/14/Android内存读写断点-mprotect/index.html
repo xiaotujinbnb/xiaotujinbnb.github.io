@@ -16,24 +16,23 @@
   <meta name="author" content="听说你是小兔叽">
   <meta name="keywords" content="">
   
-    <meta name="description" content="mincore检测原理缺页异常比如我们调用 mmap 来映射内存，为了防止内存无效分配，该内存空间在未访问时是不会创建物理内存页的。当程序需要使用这块内存区域时，会触发缺页中断，然后系统才会创建物理内存页，就是先用 mmap 申请一段内存，如果 ce, 或 GG 读取这段内存后，那么这段内存就会由缺页变成非缺页，而内存的缺页与否可以通过调用 mincore 判断. 使用1.mmap 申请内存 12">
+    <meta name="description" content="这几天听朋友说 GG 可以在不加载驱动的情况下设置内存读写断点，类似 PC 上 ce 的 “查看谁访问了该内存” 功能。网上也查了下资料，发现其实不难. 简单来说，就是先注册一个异常处理函数，然后把内存属性设置为无法访问 (PROT_NONE), 然后当程序读取或改写这段内存后会触发异常，在异常处理函数里获取到 pc 寄存器的值后恢复内存属性即可.  注册异常处理函数123456789101112">
 <meta property="og:type" content="article">
-<meta property="og:title" content="Android内存读写检测">
-<meta property="og:url" content="http://example.com/2022/11/14/Android%E5%86%85%E5%AD%98%E8%AF%BB%E5%86%99%E6%A3%80%E6%B5%8B/index.html">
+<meta property="og:title" content="Android内存读写断点--mprotect">
+<meta property="og:url" content="http://example.com/2022/11/14/Android%E5%86%85%E5%AD%98%E8%AF%BB%E5%86%99%E6%96%AD%E7%82%B9-mprotect/index.html">
 <meta property="og:site_name" content="听说你是小兔叽的博客">
-<meta property="og:description" content="mincore检测原理缺页异常比如我们调用 mmap 来映射内存，为了防止内存无效分配，该内存空间在未访问时是不会创建物理内存页的。当程序需要使用这块内存区域时，会触发缺页中断，然后系统才会创建物理内存页，就是先用 mmap 申请一段内存，如果 ce, 或 GG 读取这段内存后，那么这段内存就会由缺页变成非缺页，而内存的缺页与否可以通过调用 mincore 判断. 使用1.mmap 申请内存 12">
+<meta property="og:description" content="这几天听朋友说 GG 可以在不加载驱动的情况下设置内存读写断点，类似 PC 上 ce 的 “查看谁访问了该内存” 功能。网上也查了下资料，发现其实不难. 简单来说，就是先注册一个异常处理函数，然后把内存属性设置为无法访问 (PROT_NONE), 然后当程序读取或改写这段内存后会触发异常，在异常处理函数里获取到 pc 寄存器的值后恢复内存属性即可.  注册异常处理函数123456789101112">
 <meta property="og:locale" content="zh_CN">
-<meta property="og:image" content="http://example.com/Android%E5%86%85%E5%AD%98%E8%AF%BB%E5%86%99%E6%A3%80%E6%B5%8B/1.png">
-<meta property="og:image" content="http://example.com/Android%E5%86%85%E5%AD%98%E8%AF%BB%E5%86%99%E6%A3%80%E6%B5%8B/2.png">
-<meta property="article:published_time" content="2022-11-14T07:38:49.000Z">
-<meta property="article:modified_time" content="2022-11-14T08:02:52.391Z">
+<meta property="og:image" content="http://example.com/Android%E5%86%85%E5%AD%98%E8%AF%BB%E5%86%99%E6%96%AD%E7%82%B9-mprotect/0.png">
+<meta property="article:published_time" content="2022-11-14T08:04:39.000Z">
+<meta property="article:modified_time" content="2022-11-14T08:06:46.801Z">
 <meta property="article:author" content="听说你是小兔叽">
 <meta name="twitter:card" content="summary_large_image">
-<meta name="twitter:image" content="http://example.com/Android%E5%86%85%E5%AD%98%E8%AF%BB%E5%86%99%E6%A3%80%E6%B5%8B/1.png">
+<meta name="twitter:image" content="http://example.com/Android%E5%86%85%E5%AD%98%E8%AF%BB%E5%86%99%E6%96%AD%E7%82%B9-mprotect/0.png">
   
   
   
-  <title>Android内存读写检测 - 听说你是小兔叽的博客</title>
+  <title>Android内存读写断点--mprotect - 听说你是小兔叽的博客</title>
 
   <link  rel="stylesheet" href="https://lib.baomitu.com/twitter-bootstrap/4.6.1/css/bootstrap.min.css" />
 
@@ -198,7 +197,7 @@
       <div class="banner-text text-center fade-in-up">
         <div class="h2">
           
-            <span id="subtitle" data-typed-text="Android内存读写检测"></span>
+            <span id="subtitle" data-typed-text="Android内存读写断点--mprotect"></span>
           
         </div>
 
@@ -209,7 +208,7 @@
     
       <span class="post-meta">
         <i class="iconfont icon-date-fill" aria-hidden="true"></i>
-        <time datetime="2022-11-14 15:38" pubdate>
+        <time datetime="2022-11-14 16:04" pubdate>
           2022年11月14日 下午
         </time>
       </span>
@@ -221,7 +220,7 @@
       <span class="post-meta mr-2">
         <i class="iconfont icon-chart"></i>
         
-          2.5k 字
+          1.2k 字
         
       </span>
     
@@ -232,7 +231,7 @@
         
         
         
-          21 分钟
+          11 分钟
         
       </span>
     
@@ -270,30 +269,18 @@
         <div id="board">
           <article class="post-content mx-auto">
             <!-- SEO header -->
-            <h1 style="display: none">Android内存读写检测</h1>
+            <h1 style="display: none">Android内存读写断点--mprotect</h1>
             
             
               <div class="markdown-body">
                 
-                <h1 id="mincore检测原理"><a href="#mincore检测原理" class="headerlink" title="mincore检测原理"></a>mincore检测原理</h1><p>缺页异常比如我们调用 mmap 来映射内存，为了防止内存无效分配，该内存空间在未访问时是不会创建物理内存页的。当程序需要使用这块内存区域时，会触发缺页中断，然后系统才会创建物理内存页，就是先用 mmap 申请一段内存，如果 ce, 或 GG 读取这段内存后，那么这段内存就会由缺页变成非缺页，而内存的缺页与否可以通过调用 mincore 判断.</p>
-<h2 id="使用"><a href="#使用" class="headerlink" title="使用"></a>使用</h2><p>1.mmap 申请内存</p>
-<figure class="highlight bash"><table><tr><td class="gutter"><pre><span class="line">1</span><br><span class="line">2</span><br></pre></td><td class="code"><pre><code class="hljs bash">char * memory= nullptr;<br>memory= (char*)mmap(nullptr,0x4000, PROT_READ | PROT_WRITE | PROT_EXEC, MAP_ANONYMOUS | MAP_PRIVATE, 0, 0);<br></code></pre></td></tr></table></figure>
-<p>如果不对 memory 进行读写，那么 memory 默认为缺页状态</p>
-<p>2.mincore 判断</p>
-<figure class="highlight bash"><table><tr><td class="gutter"><pre><span class="line">1</span><br><span class="line">2</span><br><span class="line">3</span><br><span class="line">4</span><br><span class="line">5</span><br><span class="line">6</span><br><span class="line">7</span><br><span class="line">8</span><br><span class="line">9</span><br><span class="line">10</span><br><span class="line">11</span><br><span class="line">12</span><br></pre></td><td class="code"><pre><code class="hljs bash">int pageSize = getpagesize();<br>unsigned char vec = 0;<br>//memory[0]=1; 这个操作会把memory改为非缺页状态<br>unsigned long addr= reinterpret_cast&lt;unsigned long&gt;(memory);<br>unsigned long start = addr &amp; (~(pageSize - 1));<br>mincore((void *)start, pageSize, &amp;vec);<br><span class="hljs-keyword">if</span> (vec == 1)<br>&#123;<br>    LOGD(<span class="hljs-string">&quot;内存页：%p 存在于物理内存空间&quot;</span>,addr);<br>&#125;<span class="hljs-keyword">else</span>&#123;<br>    LOGD(<span class="hljs-string">&quot;内存页：%p 不存在于物理内存空间&quot;</span>,addr);<br>&#125;<br></code></pre></td></tr></table></figure>
-
-<h2 id="效果"><a href="#效果" class="headerlink" title="效果"></a>效果</h2><p>当 ce 指定读取该内存时，会发现该内存已经处于非缺页状态.</p>
-<p>但是使用 ce 全局搜索内存时，并没有检测到这段内存.<br><img src="/Android%E5%86%85%E5%AD%98%E8%AF%BB%E5%86%99%E6%A3%80%E6%B5%8B/1.png" srcset="/img/loading.gif" lazyload alt="image"></p>
-<h1 id="inotify检测原理"><a href="#inotify检测原理" class="headerlink" title="inotify检测原理"></a>inotify检测原理</h1><p>app 里使用 inotify 机制监控对内存的读写操作，引用百度百科的一句话.</p>
-<p>Inotify 是一个 Linux 内核特性，它监控文件系统，并且及时向专门的应用程序发出相关的事件警告，比如删除、读、写和卸载操作等。您还可以跟踪活动的源头和目标等细节。</p>
-<p>使用</p>
+                <p>这几天听朋友说 GG 可以在不加载驱动的情况下设置内存读写断点，类似 PC 上 ce 的 “查看谁访问了该内存” 功能。网上也查了下资料，发现其实不难.</p>
+<p>简单来说，就是先注册一个异常处理函数，然后把内存属性设置为无法访问 (PROT_NONE), 然后当程序读取或改写这段内存后会触发异常，在异常处理函数里获取到 pc 寄存器的值后恢复内存属性即可.</p>
 <ol>
-<li>新建一个监控线程.<figure class="highlight bash"><table><tr><td class="gutter"><pre><span class="line">1</span><br><span class="line">2</span><br><span class="line">3</span><br></pre></td><td class="code"><pre><code class="hljs bash">pthread_t ptMem, t, ptPageMap;<br>int iRet = 0;<br>iRet = pthread_create(&amp;ptPageMap, NULL, thread_watchInotifyDump, NULL);<br></code></pre></td></tr></table></figure></li>
-<li>初始化监控<figure class="highlight bash"><table><tr><td class="gutter"><pre><span class="line">1</span><br><span class="line">2</span><br><span class="line">3</span><br><span class="line">4</span><br><span class="line">5</span><br><span class="line">6</span><br><span class="line">7</span><br><span class="line">8</span><br><span class="line">9</span><br><span class="line">10</span><br><span class="line">11</span><br><span class="line">12</span><br><span class="line">13</span><br><span class="line">14</span><br><span class="line">15</span><br><span class="line">16</span><br><span class="line">17</span><br><span class="line">18</span><br><span class="line">19</span><br><span class="line">20</span><br><span class="line">21</span><br><span class="line">22</span><br></pre></td><td class="code"><pre><code class="hljs bash">char dirName[NAME_MAX] = &#123;0&#125;;<br>//snprintf(dirName, NAME_MAX, <span class="hljs-string">&quot;/proc/%d&quot;</span>, getpid());<br><br>//用于监控/proc/pid/mem的数据<br>snprintf(dirName, NAME_MAX, <span class="hljs-string">&quot;/proc/%d/mem&quot;</span>, getpid());<br><br>LOGD(<span class="hljs-string">&quot;监控位置 : %s\n&quot;</span>, dirName);<br><br>int fd = inotify_init();<br><span class="hljs-keyword">if</span> (fd &lt; 0)<br>&#123;<br>    LOGE(<span class="hljs-string">&quot;inotify_init err.\n&quot;</span>);<br>    <span class="hljs-built_in">return</span> 0;<br>&#125;<br>int wd = inotify_add_watch(fd, dirName, IN_ALL_EVENTS);<br><span class="hljs-keyword">if</span> (wd &lt; 0)<br>&#123;<br><br>    LOGE(<span class="hljs-string">&quot;inotify_add_watch err.\n&quot;</span>);<br>    close(fd);<br>    <span class="hljs-built_in">return</span> 0;<br>&#125;<br></code></pre></td></tr></table></figure></li>
+<li>注册异常处理函数<figure class="highlight bash"><table><tr><td class="gutter"><pre><span class="line">1</span><br><span class="line">2</span><br><span class="line">3</span><br><span class="line">4</span><br><span class="line">5</span><br><span class="line">6</span><br><span class="line">7</span><br><span class="line">8</span><br><span class="line">9</span><br><span class="line">10</span><br><span class="line">11</span><br><span class="line">12</span><br><span class="line">13</span><br><span class="line">14</span><br><span class="line">15</span><br><span class="line">16</span><br><span class="line">17</span><br><span class="line">18</span><br></pre></td><td class="code"><pre><code class="hljs bash">struct sigaction act ;<br>memset(&amp;act ,0 ,sizeof(act));<br>act.sa_sigaction = &amp;handler ; //异常处理函数<br>act.sa_flags =SA_SIGINFO |SA_RESETHAND|SA_NODEFER;<br>sigaction(SIGSEGV,&amp;act ,NULL); //注册异常处理函数,SIGSEGV表示读取或写入无效内存的错误类型<br>void handler (int sig ,siginfo_t *siginfo , void * context)&#123;<br>    //匹配我们要监控的地址<br>    <span class="hljs-keyword">if</span> (siginfo-&gt;si_addr==&amp;i)&#123;<br>        ucontext_t ctx=(*(ucontext_t*)context);<br>        LOGD(<span class="hljs-string">&quot;pc = 0x%llx \n&quot;</span>,ctx.uc_mcontext.pc); //查看是哪个代码访问了这段内存<br>    &#125;<br>    //还原原来内存的属性<br>    int pageSize = getpagesize();<br>    unsigned long addr= reinterpret_cast&lt;unsigned long&gt;(&amp;start);<br>    unsigned long mem = addr &amp; (~(pageSize - 1));<br>    LOGD(<span class="hljs-string">&quot;mprotect:%d&quot;</span>,mprotect(reinterpret_cast&lt;void *&gt;(mem), pageSize, PROT_READ|PROT_WRITE));<br>    <span class="hljs-built_in">return</span>;<br>&#125;<br></code></pre></td></tr></table></figure></li>
+<li>设置要读取的内存的属性，注意这个内存必须按页对齐。这里以读取 i 为例<figure class="highlight bash"><table><tr><td class="gutter"><pre><span class="line">1</span><br><span class="line">2</span><br><span class="line">3</span><br><span class="line">4</span><br><span class="line">5</span><br><span class="line">6</span><br></pre></td><td class="code"><pre><code class="hljs bash">int pageSize = getpagesize();<br>unsigned long addr= reinterpret_cast&lt;unsigned long&gt;(&amp;i);<br>start = addr &amp; (~(pageSize - 1)); //按页对齐,start表示对齐后的内存地址<br>LOGD(<span class="hljs-string">&quot;start：%p &quot;</span>,start);<br>LOGD(<span class="hljs-string">&quot;pageSize：%p &quot;</span>,pageSize);<br>LOGD(<span class="hljs-string">&quot;mprotect:%d&quot;</span>,mprotect(reinterpret_cast&lt;void *&gt;(start), pageSize, PROT_NONE)); //0表示成功,-1表示失败<br></code></pre></td></tr></table></figure>
+效果如下:<br><img src="/Android%E5%86%85%E5%AD%98%E8%AF%BB%E5%86%99%E6%96%AD%E7%82%B9-mprotect/0.png" srcset="/img/loading.gif" lazyload alt="image"></li>
 </ol>
-<p>3.select 读取监控消息</p>
-<figure class="highlight bash"><table><tr><td class="gutter"><pre><span class="line">1</span><br><span class="line">2</span><br><span class="line">3</span><br><span class="line">4</span><br><span class="line">5</span><br><span class="line">6</span><br><span class="line">7</span><br><span class="line">8</span><br><span class="line">9</span><br><span class="line">10</span><br><span class="line">11</span><br><span class="line">12</span><br><span class="line">13</span><br><span class="line">14</span><br><span class="line">15</span><br><span class="line">16</span><br><span class="line">17</span><br><span class="line">18</span><br><span class="line">19</span><br><span class="line">20</span><br><span class="line">21</span><br><span class="line">22</span><br><span class="line">23</span><br><span class="line">24</span><br><span class="line">25</span><br><span class="line">26</span><br><span class="line">27</span><br><span class="line">28</span><br><span class="line">29</span><br><span class="line">30</span><br><span class="line">31</span><br><span class="line">32</span><br><span class="line">33</span><br><span class="line">34</span><br><span class="line">35</span><br><span class="line">36</span><br><span class="line">37</span><br></pre></td><td class="code"><pre><code class="hljs bash">const int buflen = sizeof(struct inotify_event) * 0x100;<br>char buf[buflen] = &#123;0&#125;;<br>fd_set readfds;<br>int count[5] = &#123;0&#125;;<br><span class="hljs-keyword">while</span> (1)<br>&#123;<br>    FD_ZERO(&amp;readfds);<br>    FD_SET(fd, &amp;readfds);<br>    int iRet = select(fd + 1, &amp;readfds, 0, 0, 0); // 此处阻塞<br>    LOGD(<span class="hljs-string">&quot;iRet的返回值:%d\n&quot;</span>, iRet);<br>    <span class="hljs-keyword">if</span> (-1 == iRet)<br>        <span class="hljs-built_in">break</span>;<br>    <span class="hljs-keyword">if</span> (iRet)<br>    &#123;<br>        memset(buf, 0, buflen);<br>        int len = <span class="hljs-built_in">read</span>(fd, buf, buflen);<br>        int i = 0;<br>        <span class="hljs-keyword">while</span> (i &lt; len) &#123;<br>            struct inotify_event *event = (struct inotify_event *)&amp;buf[i];<br>            LOGD(<span class="hljs-string">&quot;event mask:%d\n&quot;</span>, event-&gt;mask);<br>            <span class="hljs-keyword">if</span> ((event-&gt;mask &amp; IN_ACCESS)) &#123;<br>                ++count[0];<br>                LOGD(<span class="hljs-string">&quot;1.IN_ACCESS,第%d次.\n\n&quot;</span>, count[0]);<br>                //__asm __volatile(<span class="hljs-string">&quot;.int 0x8c89fa98&quot;</span>);<br>            &#125;<br>            <span class="hljs-keyword">if</span> ((event-&gt;mask &amp; IN_OPEN))&#123;<br>                ++count[1];<br>                LOGD(<span class="hljs-string">&quot;2.IN_OPEN,第%d次.\n\n&quot;</span>,  count[1]);<br>            &#125;<br>            <span class="hljs-keyword">if</span> ((event-&gt;mask &amp; IN_CLOSE))&#123;<br>                ++count[2];<br>                LOGD(<span class="hljs-string">&quot;3.IN_CLOSE,第%d次.\n\n&quot;</span>, count[2]);<br>            &#125;<br>            i += sizeof(struct inotify_event) + event-&gt;len;<br>        &#125;<br>    &#125;<br>&#125;<br></code></pre></td></tr></table></figure>
-<p>效果<br>当用 ceserver 读取内存时。<br><img src="/Android%E5%86%85%E5%AD%98%E8%AF%BB%E5%86%99%E6%A3%80%E6%B5%8B/2.png" srcset="/img/loading.gif" lazyload alt="image"></p>
 
                 
               </div>
@@ -311,8 +298,8 @@
 
   <div class="license-box my-3">
     <div class="license-title">
-      <div>Android内存读写检测</div>
-      <div>http://example.com/2022/11/14/Android内存读写检测/</div>
+      <div>Android内存读写断点--mprotect</div>
+      <div>http://example.com/2022/11/14/Android内存读写断点-mprotect/</div>
     </div>
     <div class="license-meta">
       
@@ -356,18 +343,12 @@
                   <article class="post-prev col-6">
                     
                     
-                      <a href="/2022/11/14/Android%E5%86%85%E5%AD%98%E8%AF%BB%E5%86%99%E6%96%AD%E7%82%B9-mprotect/" title="Android内存读写断点--mprotect">
-                        <i class="iconfont icon-arrowleft"></i>
-                        <span class="hidden-mobile">Android内存读写断点--mprotect</span>
-                        <span class="visible-mobile">上一篇</span>
-                      </a>
-                    
                   </article>
                   <article class="post-next col-6">
                     
                     
-                      <a href="/2022/11/14/Magisk%E6%B3%A8%E5%85%A5app%E5%B9%B6%E5%B5%8C%E5%85%A5imgui/" title="Magisk注入app并嵌入imgui">
-                        <span class="hidden-mobile">Magisk注入app并嵌入imgui</span>
+                      <a href="/2022/11/14/Android%E5%86%85%E5%AD%98%E8%AF%BB%E5%86%99%E6%A3%80%E6%B5%8B/" title="Android内存读写检测">
+                        <span class="hidden-mobile">Android内存读写检测</span>
                         <span class="visible-mobile">下一篇</span>
                         <i class="iconfont icon-arrowright"></i>
                       </a>

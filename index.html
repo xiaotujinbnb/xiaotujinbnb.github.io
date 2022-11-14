@@ -223,6 +223,39 @@
     <article class="col-12 col-md-12 mx-auto index-info">
       <h1 class="index-header">
         
+        <a href="/2022/11/14/Android%E5%86%85%E5%AD%98%E8%AF%BB%E5%86%99%E6%96%AD%E7%82%B9-mprotect/" target="_self">
+          Android内存读写断点--mprotect
+        </a>
+      </h1>
+
+      
+      <a class="index-excerpt index-excerpt__noimg" href="/2022/11/14/Android%E5%86%85%E5%AD%98%E8%AF%BB%E5%86%99%E6%96%AD%E7%82%B9-mprotect/" target="_self">
+        <div>
+          这几天听朋友说 GG 可以在不加载驱动的情况下设置内存读写断点，类似 PC 上 ce 的 “查看谁访问了该内存” 功能。网上也查了下资料，发现其实不难. 简单来说，就是先注册一个异常处理函数，然后把内存属性设置为无法访问 (PROT_NONE), 然后当程序读取或改写这段内存后会触发异常，在异常处理函数里获取到 pc 寄存器的值后恢复内存属性即可.  注册异常处理函数123456789101112
+        </div>
+      </a>
+
+      <div class="index-btm post-metas">
+        
+          <div class="post-meta mr-3">
+            <i class="iconfont icon-date"></i>
+            <time datetime="2022-11-14 16:04" pubdate>
+              2022-11-14
+            </time>
+          </div>
+        
+        
+        
+      </div>
+    </article>
+  </div>
+
+  <div class="row mx-auto index-card">
+    
+    
+    <article class="col-12 col-md-12 mx-auto index-info">
+      <h1 class="index-header">
+        
         <a href="/2022/11/14/Android%E5%86%85%E5%AD%98%E8%AF%BB%E5%86%99%E6%A3%80%E6%B5%8B/" target="_self">
           Android内存读写检测
         </a>
