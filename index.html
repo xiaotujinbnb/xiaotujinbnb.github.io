@@ -223,6 +223,72 @@
     <article class="col-12 col-md-12 mx-auto index-info">
       <h1 class="index-header">
         
+        <a href="/2022/11/14/Android%E5%86%85%E5%AD%98%E8%AF%BB%E5%86%99%E6%A3%80%E6%B5%8B/" target="_self">
+          Android内存读写检测
+        </a>
+      </h1>
+
+      
+      <a class="index-excerpt index-excerpt__noimg" href="/2022/11/14/Android%E5%86%85%E5%AD%98%E8%AF%BB%E5%86%99%E6%A3%80%E6%B5%8B/" target="_self">
+        <div>
+          原理缺页异常比如我们调用 mmap 来映射内存，为了防止内存无效分配，该内存空间在未访问时是不会创建物理内存页的。当程序需要使用这块内存区域时，会触发缺页中断，然后系统才会创建物理内存页，就是先用 mmap 申请一段内存，如果 ce, 或 GG 读取这段内存后，那么这段内存就会由缺页变成非缺页，而内存的缺页与否可以通过调用 mincore 判断. 使用1.mmap 申请内存 12char * me
+        </div>
+      </a>
+
+      <div class="index-btm post-metas">
+        
+          <div class="post-meta mr-3">
+            <i class="iconfont icon-date"></i>
+            <time datetime="2022-11-14 15:38" pubdate>
+              2022-11-14
+            </time>
+          </div>
+        
+        
+        
+      </div>
+    </article>
+  </div>
+
+  <div class="row mx-auto index-card">
+    
+    
+    <article class="col-12 col-md-12 mx-auto index-info">
+      <h1 class="index-header">
+        
+        <a href="/2022/11/14/Magisk%E6%B3%A8%E5%85%A5app%E5%B9%B6%E5%B5%8C%E5%85%A5imgui/" target="_self">
+          Magisk注入app并嵌入imgui
+        </a>
+      </h1>
+
+      
+      <a class="index-excerpt index-excerpt__noimg" href="/2022/11/14/Magisk%E6%B3%A8%E5%85%A5app%E5%B9%B6%E5%B5%8C%E5%85%A5imgui/" target="_self">
+        <div>
+          Android特殊绘制方框的方法 Android特殊绘制方框的方法需要关闭 selinux 并且要把 linker 和 libc 的路径分别改为 12/apex/com.android.runtime/bin/linker64/apex/com.android.runtime/lib64/bionic/libc.so  具体可以看这篇 github github 说回正题，既然 Surfacefl
+        </div>
+      </a>
+
+      <div class="index-btm post-metas">
+        
+          <div class="post-meta mr-3">
+            <i class="iconfont icon-date"></i>
+            <time datetime="2022-11-14 15:27" pubdate>
+              2022-11-14
+            </time>
+          </div>
+        
+        
+        
+      </div>
+    </article>
+  </div>
+
+  <div class="row mx-auto index-card">
+    
+    
+    <article class="col-12 col-md-12 mx-auto index-info">
+      <h1 class="index-header">
+        
         <a href="/2022/11/14/hello-world/" target="_self">
           Hello World
         </a>

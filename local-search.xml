@@ -4,6 +4,32 @@
   
   
   <entry>
+    <title>Android内存读写检测</title>
+    <link href="/2022/11/14/Android%E5%86%85%E5%AD%98%E8%AF%BB%E5%86%99%E6%A3%80%E6%B5%8B/"/>
+    <url>/2022/11/14/Android%E5%86%85%E5%AD%98%E8%AF%BB%E5%86%99%E6%A3%80%E6%B5%8B/</url>
+    
+    <content type="html"><![CDATA[<h1 id="原理"><a href="#原理" class="headerlink" title="原理"></a>原理</h1><p>缺页异常比如我们调用 mmap 来映射内存，为了防止内存无效分配，该内存空间在未访问时是不会创建物理内存页的。当程序需要使用这块内存区域时，会触发缺页中断，然后系统才会创建物理内存页，就是先用 mmap 申请一段内存，如果 ce, 或 GG 读取这段内存后，那么这段内存就会由缺页变成非缺页，而内存的缺页与否可以通过调用 mincore 判断.</p><h2 id="使用"><a href="#使用" class="headerlink" title="使用"></a>使用</h2><p>1.mmap 申请内存</p><figure class="highlight bash"><table><tr><td class="gutter"><pre><span class="line">1</span><br><span class="line">2</span><br></pre></td><td class="code"><pre><code class="hljs bash">char * memory= nullptr;<br>memory= (char*)mmap(nullptr,0x4000, PROT_READ | PROT_WRITE | PROT_EXEC, MAP_ANONYMOUS | MAP_PRIVATE, 0, 0);<br></code></pre></td></tr></table></figure><p>如果不对 memory 进行读写，那么 memory 默认为缺页状态</p><p>2.mincore 判断</p><figure class="highlight bash"><table><tr><td class="gutter"><pre><span class="line">1</span><br><span class="line">2</span><br><span class="line">3</span><br><span class="line">4</span><br><span class="line">5</span><br><span class="line">6</span><br><span class="line">7</span><br><span class="line">8</span><br><span class="line">9</span><br><span class="line">10</span><br><span class="line">11</span><br><span class="line">12</span><br></pre></td><td class="code"><pre><code class="hljs bash">int pageSize = getpagesize();<br>unsigned char vec = 0;<br>//memory[0]=1; 这个操作会把memory改为非缺页状态<br>unsigned long addr= reinterpret_cast&lt;unsigned long&gt;(memory);<br>unsigned long start = addr &amp; (~(pageSize - 1));<br>mincore((void *)start, pageSize, &amp;vec);<br><span class="hljs-keyword">if</span> (vec == 1)<br>&#123;<br>    LOGD(<span class="hljs-string">&quot;内存页：%p 存在于物理内存空间&quot;</span>,addr);<br>&#125;<span class="hljs-keyword">else</span>&#123;<br>    LOGD(<span class="hljs-string">&quot;内存页：%p 不存在于物理内存空间&quot;</span>,addr);<br>&#125;<br></code></pre></td></tr></table></figure><h2 id="效果"><a href="#效果" class="headerlink" title="效果"></a>效果</h2><p>当 ce 指定读取该内存时，会发现该内存已经处于非缺页状态.</p><p>但是使用 ce 全局搜索内存时，并没有检测到这段内存.<br><img src="/Android%E5%86%85%E5%AD%98%E8%AF%BB%E5%86%99%E6%A3%80%E6%B5%8B/1.png" alt="image"></p>]]></content>
+    
+    
+    
+  </entry>
+  
+  
+  
+  <entry>
+    <title>Magisk注入app并嵌入imgui</title>
+    <link href="/2022/11/14/Magisk%E6%B3%A8%E5%85%A5app%E5%B9%B6%E5%B5%8C%E5%85%A5imgui/"/>
+    <url>/2022/11/14/Magisk%E6%B3%A8%E5%85%A5app%E5%B9%B6%E5%B5%8C%E5%85%A5imgui/</url>
+    
+    <content type="html"><![CDATA[<p>Android特殊绘制方框的方法</p><h2 id="Android特殊绘制方框的方法"><a href="#Android特殊绘制方框的方法" class="headerlink" title="Android特殊绘制方框的方法"></a>Android特殊绘制方框的方法</h2><p>需要关闭 selinux 并且要把 linker 和 libc 的路径分别改为</p><figure class="highlight bash"><table><tr><td class="gutter"><pre><span class="line">1</span><br><span class="line">2</span><br></pre></td><td class="code"><pre><code class="hljs bash">/apex/com.android.runtime/bin/linker64<br>/apex/com.android.runtime/lib64/bionic/libc.so<br></code></pre></td></tr></table></figure><p>具体可以看这篇 github <a href="https://github.com/SsageParuders/AndroidPtraceInject">github</a></p><p>说回正题，既然 Surfaceflinger 进程没有 eglSwapBuffers 函数，那么 eglSwapBuffers 肯定是在 app 内部调用的，直接 hook 了 app 内部 eglSwapBuffers 函数就行.</p><figure class="highlight bash"><table><tr><td class="gutter"><pre><span class="line">1</span><br><span class="line">2</span><br><span class="line">3</span><br><span class="line">4</span><br><span class="line">5</span><br><span class="line">6</span><br><span class="line">7</span><br><span class="line">8</span><br><span class="line">9</span><br></pre></td><td class="code"><pre><code class="hljs bash">static void <span class="hljs-function"><span class="hljs-title">init_dobby</span></span>()<br>&#123;<br>    void *sym_eglSwapBuffers = DobbySymbolResolver(NULL, <span class="hljs-string">&quot;eglSwapBuffers&quot;</span>);<br>    <span class="hljs-keyword">if</span> (NULL != sym_eglSwapBuffers)<br>    &#123;<br>        LOGD(<span class="hljs-string">&quot;sym_eglSwapBuffers:%llx&quot;</span>, (unsigned long long)sym_eglSwapBuffers);<br>        DobbyHook(sym_eglSwapBuffers, (void *)new_eglSwapBuffers, (void **)&amp;ori_eglSwapBuffers);<br>    &#125;<br>&#125;<br></code></pre></td></tr></table></figure><p>我这里选用 Dobby 的 hook 框架，参考了使用<a href="https://www.cnblogs.com/luoyesiqiu/p/magisk_riru.html#at?hmsr=toutiao.io&utm_campaign=toutiao.io&utm_medium=toutiao.io&utm_source=toutiao.io">Magisk+riru 实现全局改机的用法.</a><br>在 hook 后的 new_eglSwapBuffers 里完成 imgui 的初始化，显示即可。基本上不需要怎么改动 imgui 的代码.</p><figure class="highlight bash"><table><tr><td class="gutter"><pre><span class="line">1</span><br><span class="line">2</span><br><span class="line">3</span><br><span class="line">4</span><br><span class="line">5</span><br><span class="line">6</span><br><span class="line">7</span><br><span class="line">8</span><br><span class="line">9</span><br><span class="line">10</span><br><span class="line">11</span><br><span class="line">12</span><br><span class="line">13</span><br><span class="line">14</span><br><span class="line">15</span><br><span class="line">16</span><br><span class="line">17</span><br></pre></td><td class="code"><pre><code class="hljs bash">IMGUI_CHECKVERSION();<br>ImGui::CreateContext();<br>ImGuiIO&amp; io = ImGui::GetIO();<br><br>// Disable loading/saving of .ini file from disk.<br>// FIXME: Consider using LoadIniSettingsFromMemory() / SaveIniSettingsToMemory() to save <span class="hljs-keyword">in</span> appropriate location <span class="hljs-keyword">for</span> Android.<br>io.IniFilename = NULL;<br><br>// Setup Dear ImGui style<br>ImGui::StyleColorsDark();<br>//ImGui::StyleColorsClassic();<br><br>// Setup Platform/Renderer backends<br>ImGui_ImplAndroid_Init(nullptr);<br>ImGui_ImplOpenGL3_Init(<span class="hljs-string">&quot;#version 300 es&quot;</span>);<br>g_Initialized = <span class="hljs-literal">true</span>;<br>.......<br></code></pre></td></tr></table></figure><p>之后用 Zygisk-ModuleTemplate 模板编译，magisk 安装就行.</p><p>不足之处:</p><ol><li>由于和游戏共用 surface, 如果绘制异常游戏直接闪退.</li><li>进行复杂绘制的时候会卡游戏画面，降低帧率.</li><li>兼容性差，不支持大部分的 ue4 引擎的游戏.</li></ol>]]></content>
+    
+    
+    
+  </entry>
+  
+  
+  
+  <entry>
     <title>Hello World</title>
     <link href="/2022/11/14/hello-world/"/>
     <url>/2022/11/14/hello-world/</url>
