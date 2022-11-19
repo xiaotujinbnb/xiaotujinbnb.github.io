@@ -16,21 +16,21 @@
   <meta name="author" content="听说你是小兔叽">
   <meta name="keywords" content="">
   
-    <meta name="description" content="So注入so注入的主要思路是：找到目标进程使用ptrace跟踪目标进程，保存目标进程的状态获得mmap、dlopen、dlsym等库函数在目标进程中的偏移地址调用mmap在目标进程内部申请一段内存空间将我们的ShellCode写入到刚才申请的内存空间中dlopen打开Shellcode，dlsym调用Shellcode库的函数恢复原so状态，detach 核心点 ptrace12345678#in">
+    <meta name="description" content="LikZr:https:&#x2F;&#x2F;blog.csdn.net&#x2F;fdfasf&#x2F;article&#x2F;details&#x2F;121427131 LikZr:http:&#x2F;&#x2F;t.zoukankan.com&#x2F;hacker007-p-9549502.html LikZr:https:&#x2F;&#x2F;blog.csdn.net&#x2F;shulianghan&#x2F;article&#x2F;details&#x2F;121047096 LikZr:https:&#x2F;&#x2F;www.j">
 <meta property="og:type" content="article">
-<meta property="og:title" content="ptrace注入so">
-<meta property="og:url" content="http://example.com/2022/06/27/ptrace%E6%B3%A8%E5%85%A5so/index.html">
+<meta property="og:title" content="ptrace的各种操作">
+<meta property="og:url" content="http://example.com/2022/06/27/ptrace%E7%9A%84%E5%90%84%E7%A7%8D%E6%93%8D%E4%BD%9C/index.html">
 <meta property="og:site_name" content="听说你是小兔叽的博客">
-<meta property="og:description" content="So注入so注入的主要思路是：找到目标进程使用ptrace跟踪目标进程，保存目标进程的状态获得mmap、dlopen、dlsym等库函数在目标进程中的偏移地址调用mmap在目标进程内部申请一段内存空间将我们的ShellCode写入到刚才申请的内存空间中dlopen打开Shellcode，dlsym调用Shellcode库的函数恢复原so状态，detach 核心点 ptrace12345678#in">
+<meta property="og:description" content="LikZr:https:&#x2F;&#x2F;blog.csdn.net&#x2F;fdfasf&#x2F;article&#x2F;details&#x2F;121427131 LikZr:http:&#x2F;&#x2F;t.zoukankan.com&#x2F;hacker007-p-9549502.html LikZr:https:&#x2F;&#x2F;blog.csdn.net&#x2F;shulianghan&#x2F;article&#x2F;details&#x2F;121047096 LikZr:https:&#x2F;&#x2F;www.j">
 <meta property="og:locale" content="zh_CN">
 <meta property="article:published_time" content="2022-06-27T13:22:30.000Z">
-<meta property="article:modified_time" content="2022-11-14T13:46:02.167Z">
+<meta property="article:modified_time" content="2022-11-17T14:45:49.106Z">
 <meta property="article:author" content="听说你是小兔叽">
 <meta name="twitter:card" content="summary_large_image">
   
   
   
-  <title>ptrace注入so - 听说你是小兔叽的博客</title>
+  <title>ptrace的各种操作 - 听说你是小兔叽的博客</title>
 
   <link  rel="stylesheet" href="https://lib.baomitu.com/twitter-bootstrap/4.6.1/css/bootstrap.min.css" />
 
@@ -195,7 +195,7 @@
       <div class="banner-text text-center fade-in-up">
         <div class="h2">
           
-            <span id="subtitle" data-typed-text="ptrace注入so"></span>
+            <span id="subtitle" data-typed-text="ptrace的各种操作"></span>
           
         </div>
 
@@ -218,7 +218,7 @@
       <span class="post-meta mr-2">
         <i class="iconfont icon-chart"></i>
         
-          12k 字
+          14k 字
         
       </span>
     
@@ -229,7 +229,7 @@
         
         
         
-          104 分钟
+          120 分钟
         
       </span>
     
@@ -267,13 +267,36 @@
         <div id="board">
           <article class="post-content mx-auto">
             <!-- SEO header -->
-            <h1 style="display: none">ptrace注入so</h1>
+            <h1 style="display: none">ptrace的各种操作</h1>
             
             
               <div class="markdown-body">
                 
-                <h1 id="So注入"><a href="#So注入" class="headerlink" title="So注入"></a>So注入</h1><p>so注入的主要思路是：<br>找到目标进程<br>使用ptrace跟踪目标进程，保存目标进程的状态<br>获得mmap、dlopen、dlsym等库函数在目标进程中的偏移地址<br>调用mmap在目标进程内部申请一段内存空间<br>将我们的ShellCode写入到刚才申请的内存空间中<br>dlopen打开Shellcode，dlsym调用Shellcode库的函数<br>恢复原so状态，detach</p>
-<h1 id="核心点-ptrace"><a href="#核心点-ptrace" class="headerlink" title="核心点 ptrace"></a>核心点 ptrace</h1><figure class="highlight bash"><table><tr><td class="gutter"><pre><span class="line">1</span><br><span class="line">2</span><br><span class="line">3</span><br><span class="line">4</span><br><span class="line">5</span><br><span class="line">6</span><br><span class="line">7</span><br><span class="line">8</span><br></pre></td><td class="code"><pre><code class="hljs bash"><span class="hljs-comment">#include &lt;sys/ptrace.h&gt;</span><br><br>long ptrace（enum _ptrace_request request,pid_t pid,void * addr ,void *data）;<br><br>    1). enum __ptrace_request request：指示了ptrace要执行的命令。<br>    2). pid_t pid: 指示ptrace要跟踪的进程。<br>    3). void *addr: 指示要监控的内存地址。<br>    4). void *data: 存放读取出的或者要写入的数据。<br></code></pre></td></tr></table></figure>
+                <p>LikZr:<br><a target="_blank" rel="noopener" href="https://blog.csdn.net/fdfasf/article/details/121427131">https://blog.csdn.net/fdfasf/article/details/121427131</a></p>
+<p>LikZr:<br><a target="_blank" rel="noopener" href="http://t.zoukankan.com/hacker007-p-9549502.html">http://t.zoukankan.com/hacker007-p-9549502.html</a></p>
+<p>LikZr:<br><a target="_blank" rel="noopener" href="https://blog.csdn.net/shulianghan/article/details/121047096">https://blog.csdn.net/shulianghan/article/details/121047096</a></p>
+<p>LikZr:<br><a target="_blank" rel="noopener" href="https://www.jianshu.com/p/499d6b808d09">https://www.jianshu.com/p/499d6b808d09</a></p>
+<p>LikZr:<br><a target="_blank" rel="noopener" href="https://www.thinbug.com/q/56024498">https://www.thinbug.com/q/56024498</a></p>
+<p>LikZr:<br><a target="_blank" rel="noopener" href="https://xz.aliyun.com/t/11480">https://xz.aliyun.com/t/11480</a></p>
+<p>LikZr:<br><a target="_blank" rel="noopener" href="https://www.thinbug.com/q/55006186">https://www.thinbug.com/q/55006186</a></p>
+<h1 id="ptrace注入读取进程内存数据"><a href="#ptrace注入读取进程内存数据" class="headerlink" title="ptrace注入读取进程内存数据"></a>ptrace注入读取进程内存数据</h1><h2 id="一、读取进程内存数据"><a href="#一、读取进程内存数据" class="headerlink" title="一、读取进程内存数据"></a>一、读取进程内存数据</h2><p>使用 ptrace 函数读取内存数据 :​</p>
+<figure class="highlight bash"><table><tr><td class="gutter"><pre><span class="line">1</span><br><span class="line">2</span><br><span class="line">3</span><br><span class="line">4</span><br><span class="line">5</span><br></pre></td><td class="code"><pre><code class="hljs bash">//传入的第一个参数可以是 PTRACE_PEEKTEXT / PTRACE_PEEKDATA / PTRACE_PEEKUSER , 这三个参数效果相同 ;<br>//传入的第二个参数是 进程号 PID , ptrace 函数可以同时调试多个进程 ;<br>//传入的第三个参数是内存地址 , void* 指针类型的 ;<br>//传入的第四个参数默认为 0 ;<br>ptrace(PTRACE_PEEKTEXT, m_nPid, (void*)pRemoteAddr, 0);<br></code></pre></td></tr></table></figure>
+<ol>
+<li>上述读取进程内存数据的 ptrace 方法的返回值是一个 4 字节数据 , 32 位的设备上 , 最长只能读取 4 字节 ; 可以在 for 循环中读取内存中的数据 ;</li>
+</ol>
+<h2 id="二、读取流程"><a href="#二、读取流程" class="headerlink" title="二、读取流程"></a>二、读取流程</h2><p>读取进程内存数据时 , 每次最多只能读取 4 字节数据 , 先根据读取的大小 , 计算出读取次数 ,</p>
+<figure class="highlight bash"><table><tr><td class="gutter"><pre><span class="line">1</span><br><span class="line">2</span><br></pre></td><td class="code"><pre><code class="hljs bash">// 每次读取 4 字节 , 读取次数为 nSize / 4<br>  j = nSize / 4;<br></code></pre></td></tr></table></figure>
+<p>然后再计算出最后不足 4 字节的部分 ,</p>
+<figure class="highlight bash"><table><tr><td class="gutter"><pre><span class="line">1</span><br><span class="line">2</span><br></pre></td><td class="code"><pre><code class="hljs bash">// 读取最后不满 4 个字节的数据 <br>  remain = nSize % 4;<br></code></pre></td></tr></table></figure>
+
+<p>读取数据时 , 先循环 j 次 , 读取 j x 4 字节数据 ,</p>
+<figure class="highlight gcode"><table><tr><td class="gutter"><pre><span class="line">1</span><br><span class="line">2</span><br><span class="line">3</span><br><span class="line">4</span><br><span class="line">5</span><br><span class="line">6</span><br><span class="line">7</span><br><span class="line">8</span><br></pre></td><td class="code"><pre><code class="hljs gcode">for <span class="hljs-comment">(i = 0; i &lt; j; i++)</span> &#123;<br>    <span class="hljs-comment">// 32 位的设备上 , 最长只能读取 4 字节 </span><br>    d.val = ptrace<span class="hljs-comment">(PTRACE_PEEKTEXT, m_nPid, (void*)</span>pRemoteAddr, <span class="hljs-number">0</span>);<br>    <span class="hljs-comment">// 将读取的数据拷贝到 laddr 地址中 </span><br>    memcpy<span class="hljs-comment">(laddr, d.chars, 4)</span>;<br>    pRemoteAddr += <span class="hljs-number">4</span>;<br>    laddr += <span class="hljs-number">4</span>;<br>  &#125;<br></code></pre></td></tr></table></figure>
+<p>最后再读取一次末尾不足 4 字节的数据 ;</p>
+<figure class="highlight bash"><table><tr><td class="gutter"><pre><span class="line">1</span><br><span class="line">2</span><br><span class="line">3</span><br><span class="line">4</span><br><span class="line">5</span><br></pre></td><td class="code"><pre><code class="hljs bash">// 读取最后不足 4 字节的数据 <br>  <span class="hljs-keyword">if</span> (remain &gt; 0) &#123;<br>    d.val = ptrace(PTRACE_PEEKTEXT, m_nPid, (void*)pRemoteAddr, 0);<br>    memcpy(laddr, d.chars, remain);<br>  &#125;<br></code></pre></td></tr></table></figure>
+<h2 id="三、完整代码"><a href="#三、完整代码" class="headerlink" title="三、完整代码"></a>三、完整代码</h2><p>使用 ptrace 函数读取内存完整代码</p>
+<figure class="highlight bash"><table><tr><td class="gutter"><pre><span class="line">1</span><br><span class="line">2</span><br><span class="line">3</span><br><span class="line">4</span><br><span class="line">5</span><br><span class="line">6</span><br><span class="line">7</span><br><span class="line">8</span><br><span class="line">9</span><br><span class="line">10</span><br><span class="line">11</span><br><span class="line">12</span><br><span class="line">13</span><br><span class="line">14</span><br><span class="line">15</span><br><span class="line">16</span><br><span class="line">17</span><br><span class="line">18</span><br><span class="line">19</span><br><span class="line">20</span><br><span class="line">21</span><br><span class="line">22</span><br><span class="line">23</span><br><span class="line">24</span><br><span class="line">25</span><br><span class="line">26</span><br><span class="line">27</span><br><span class="line">28</span><br><span class="line">29</span><br><span class="line">30</span><br><span class="line">31</span><br><span class="line">32</span><br><span class="line">33</span><br></pre></td><td class="code"><pre><code class="hljs bash">int CPtrace::<span class="hljs-built_in">read</span>(char* pRemoteAddr, char* pBuf, size_t nSize)<br>&#123;<br>  uint32_t i = 0, j = 0, remain = 0;<br>  // 拷贝数据的目的地址 , 该指针需要不断累加计算 , 记录已经读取的数据<br>  char *laddr;<br>  // 联合体 , 在同一个内存地址上 , 既可以以 long 类型解析这块数据 , 也可以以 char 数组类型解析这块数据<br>  union u &#123;<br>    long val;<br>    char chars[sizeof(long)];<br>  &#125; d;<br>  // 每次读取 4 字节 , 读取次数为 nSize / 4<br>  j = nSize / 4;<br>  // 读取最后不满 4 个字节的数据 <br>  remain = nSize % 4;<br>  // 设置读取数据的最终存放地址 <br>  laddr = pBuf;<br><br>  <span class="hljs-keyword">for</span> (i = 0; i &lt; j; i++) &#123;<br>    // 32 位的设备上 , 最长只能读取 4 字节 <br>    d.val = ptrace(PTRACE_PEEKTEXT, m_nPid, (void*)pRemoteAddr, 0);<br>    // 将读取的数据拷贝到 laddr 地址中 <br>    memcpy(laddr, d.chars, 4);<br>    pRemoteAddr += 4;<br>    laddr += 4;<br>  &#125;<br>  // 读取最后不足 4 字节的数据 <br>  <span class="hljs-keyword">if</span> (remain &gt; 0) &#123;<br>    d.val = ptrace(PTRACE_PEEKTEXT, m_nPid, (void*)pRemoteAddr, 0);<br>    memcpy(laddr, d.chars, remain);<br>  &#125;<br>  <span class="hljs-built_in">return</span> PTERR_SUCCESS;<br>&#125;<br><br></code></pre></td></tr></table></figure>
+<h1 id="ptrace注入So"><a href="#ptrace注入So" class="headerlink" title="ptrace注入So"></a>ptrace注入So</h1><p>so注入的主要思路是：<br>找到目标进程<br>使用ptrace跟踪目标进程，保存目标进程的状态<br>获得mmap、dlopen、dlsym等库函数在目标进程中的偏移地址<br>调用mmap在目标进程内部申请一段内存空间<br>将我们的ShellCode写入到刚才申请的内存空间中<br>dlopen打开Shellcode，dlsym调用Shellcode库的函数<br>恢复原so状态，detach</p>
+<h2 id="核心点-ptrace"><a href="#核心点-ptrace" class="headerlink" title="核心点 ptrace"></a>核心点 ptrace</h2><figure class="highlight bash"><table><tr><td class="gutter"><pre><span class="line">1</span><br><span class="line">2</span><br><span class="line">3</span><br><span class="line">4</span><br><span class="line">5</span><br><span class="line">6</span><br><span class="line">7</span><br><span class="line">8</span><br></pre></td><td class="code"><pre><code class="hljs bash"><span class="hljs-comment">#include &lt;sys/ptrace.h&gt;</span><br><br>long ptrace（enum _ptrace_request request,pid_t pid,void * addr ,void *data）;<br><br>    1). enum __ptrace_request request：指示了ptrace要执行的命令。<br>    2). pid_t pid: 指示ptrace要跟踪的进程。<br>    3). void *addr: 指示要监控的内存地址。<br>    4). void *data: 存放读取出的或者要写入的数据。<br></code></pre></td></tr></table></figure>
 <p>简单点，ptrace是个系统调用，功能是提供一个进程（父进程）监控和管理另一个进程（子进程）的能力，并允许父进程检查和替换子进程的内核镜像(包括寄存器)的值。</p>
 <p>基本原理是: 当使用了ptrace跟踪后，所有发送给被跟踪的子进程的信号(除了SIGKILL)，都会被转发给父进程，而子进程则会被阻塞，这时子进程的状态就会被系统标注为TASK_TRACED。而父进程收到信号后，就可以对停止下来的子进程进行检查和修改，然后让子进程继续运行。</p>
 <h2 id="ptrace命令"><a href="#ptrace命令" class="headerlink" title="ptrace命令"></a>ptrace命令</h2><p>1). 用PTRACE_ATTACH或者PTRACE_TRACEME 建立进程间的跟踪关系。<br>2). PTRACE_PEEKTEXT, PTRACE_PEEKDATA, PTRACE_PEEKUSR等读取子进程内存&#x2F;寄存器中保留的值。<br>3). PTRACE_POKETEXT, PTRACE_POKEDATA, PTRACE_POKEUSR等把值写入到被跟踪进程的内存&#x2F;寄存器中<br>4). 用PTRACE_CONT，PTRACE_SYSCALL, PTRACE_SINGLESTEP控制被跟踪进程以何种方式继续运行。<br>5). PTRACE_DETACH, PTRACE_KILL 脱离进程间的跟踪关系。</p>
@@ -283,7 +306,7 @@
 <p>在上面的程序中，fork出的子进程先调用了ptrace(PTRACE_TRACEME)表示子进程让父进程跟踪自己。然后子进程调用execl加载执行了HelloWorld。</p>
 <p>而在父进程中则使用wait系统调用等待子进程的中断或结束。子进程因为设置了PTRACE_TRACEME而在执行系统调用被系统停止(设置为TASK_TRACED)，这时父进程被唤醒，使用ptrace(PTRACE_PEEKUSER,pid,…)分别去读取子进程执行的系统调用ID(放在ORIG_EAX中)以及系统调用返回时的值(放在EAX中)。然后使用ptrace(PTRACE_SYSCALL,pid,…)指示子进程运行到下一次执行系统调用的时候(进入或者退出)，直到子进程退出为止。</p>
 <p>wait指令会让父进程挂起，等待子进程的中断或结束</p>
-<h1 id="断点原理"><a href="#断点原理" class="headerlink" title="断点原理"></a>断点原理</h1><p>断点是大家在调试程序时常用的一个功能,如break linenumber，当执行到linenumber那一行的时候被调试程序会停止，等待debugger的进一步操作。<br>断点的实现原理，就是在指定的位置插入断点指令，当被调试的程序运行到断点的时候，产生SIGTRAP信号。该信号被gdb捕获并进行断点命中判定，当gdb判断出这次SIGTRAP是断点命中之后就会转入等待用户输入进行下一步处理，否则继续。</p>
+<h2 id="断点原理"><a href="#断点原理" class="headerlink" title="断点原理"></a>断点原理</h2><p>断点是大家在调试程序时常用的一个功能,如break linenumber，当执行到linenumber那一行的时候被调试程序会停止，等待debugger的进一步操作。<br>断点的实现原理，就是在指定的位置插入断点指令，当被调试的程序运行到断点的时候，产生SIGTRAP信号。该信号被gdb捕获并进行断点命中判定，当gdb判断出这次SIGTRAP是断点命中之后就会转入等待用户输入进行下一步处理，否则继续。</p>
 <p>断点的设置原理: 在程序中设置断点，就是先将该位置的原来的指令保存，然后向该位置写入int 3。当执行到int 3的时候，发生软中断，内核会给子进程发出SIGTRAP信号，当然这个信号会被转发给父进程。然后用保存的指令替换int3,等待恢复运行。<br>断点命中判定:gdb把所有的断点位置都存放在一个链表中，命中判定即把被调试程序当前停止的位置和链表中的断点位置进行比较，看是断点产生的信号，还是无关信号。</p>
 <h2 id="单步调试"><a href="#单步调试" class="headerlink" title="单步调试"></a>单步调试</h2><p>单步跟踪就是指在调试程序的时候，让程序运行一条指令&#x2F;语句后就停下。GDB中常用的命令有next, step, nexti, stepi。单步跟踪又常分为语句单步(next, step)和指令单步(如nexti, stepi)。</p>
 <p>在linux上，指令单步可以通过ptrace来实现。调用ptrace(PTRACE_SINGLESTEP,pid,…)可以使被调试的进程在每执行完一条指令后就触发一个SIGTRAP信号，让GDB运行</p>
@@ -347,7 +370,7 @@
 
 <figure class="highlight bash"><table><tr><td class="gutter"><pre><span class="line">1</span><br><span class="line">2</span><br><span class="line">3</span><br><span class="line">4</span><br><span class="line">5</span><br><span class="line">6</span><br><span class="line">7</span><br><span class="line">8</span><br><span class="line">9</span><br></pre></td><td class="code"><pre><code class="hljs bash">int ptrace_detach(pid_t pid)    <br>&#123;    <br>    <span class="hljs-keyword">if</span> (ptrace(PTRACE_DETACH, pid, NULL, 0) &lt; 0) &#123;    <br>        perror(<span class="hljs-string">&quot;ptrace_detach&quot;</span>);    <br>        <span class="hljs-built_in">return</span> -1;    <br>    &#125;    <br>    <br>    <span class="hljs-built_in">return</span> 0;    <br>&#125;<br></code></pre></td></tr></table></figure>
 
-<h1 id="结束"><a href="#结束" class="headerlink" title="结束"></a>结束</h1>
+<h1 id="ptrace拦截系统调用"><a href="#ptrace拦截系统调用" class="headerlink" title="ptrace拦截系统调用"></a>ptrace拦截系统调用</h1><h1 id="结束"><a href="#结束" class="headerlink" title="结束"></a>结束</h1>
                 
               </div>
             
@@ -364,8 +387,8 @@
 
   <div class="license-box my-3">
     <div class="license-title">
-      <div>ptrace注入so</div>
-      <div>http://example.com/2022/06/27/ptrace注入so/</div>
+      <div>ptrace的各种操作</div>
+      <div>http://example.com/2022/06/27/ptrace的各种操作/</div>
     </div>
     <div class="license-meta">
       
@@ -383,7 +406,7 @@
       
         <div class="license-meta-item license-meta-date">
           <div>更新于</div>
-          <div>2022年11月14日</div>
+          <div>2022年11月17日</div>
         </div>
       
       
