@@ -1,678 +1,212 @@
-
-
-<!DOCTYPE html>
-<html lang="zh-CN" data-default-color-scheme=auto>
-
-
-
-<head>
-  <meta charset="UTF-8">
-  <link rel="apple-touch-icon" sizes="76x76" href="/img/fluid.png">
-  <link rel="icon" href="/img/fluid.png">
-  <meta name="viewport" content="width=device-width, initial-scale=1.0, maximum-scale=5.0, shrink-to-fit=no">
-  <meta http-equiv="x-ua-compatible" content="ie=edge">
-  
-  <meta name="theme-color" content="#2f4154">
-  <meta name="author" content="听说你是小兔叽">
-  <meta name="keywords" content="">
-  
-    <meta name="description" content="frida介绍frida是一款便携的,自由的,支持全平台的,hook框架，可以通过编写JavaScript,Python代码来和frida_server端进行交互,还记得当年用xposed时那种写了一大堆代码每次修改都要重新打包安装重启手机,那种调试调到头皮发麻的痛苦百分之30的时间都是在那里安装重启安装重启直到有一天遇到了小甜甜。 frida的代码结构123456789frida-core: F">
+<!DOCTYPE html><html lang="zh-CN" data-theme="light"><head><meta charset="UTF-8"><meta http-equiv="X-UA-Compatible" content="IE=edge"><meta name="viewport" content="width=device-width, initial-scale=1.0, maximum-scale=1.0, user-scalable=no"><title>Frida工作原理学习 | 听说你是小兔叽的博客</title><meta name="author" content="听说你是小兔叽"><meta name="copyright" content="听说你是小兔叽"><meta name="format-detection" content="telephone=no"><meta name="theme-color" content="#ffffff"><meta name="description" content="枯燥乏味的原理研究">
 <meta property="og:type" content="article">
 <meta property="og:title" content="Frida工作原理学习">
 <meta property="og:url" content="http://example.com/2022/06/26/Frida%E5%B7%A5%E4%BD%9C%E5%8E%9F%E7%90%86%E5%AD%A6%E4%B9%A0/index.html">
 <meta property="og:site_name" content="听说你是小兔叽的博客">
-<meta property="og:description" content="frida介绍frida是一款便携的,自由的,支持全平台的,hook框架，可以通过编写JavaScript,Python代码来和frida_server端进行交互,还记得当年用xposed时那种写了一大堆代码每次修改都要重新打包安装重启手机,那种调试调到头皮发麻的痛苦百分之30的时间都是在那里安装重启安装重启直到有一天遇到了小甜甜。 frida的代码结构123456789frida-core: F">
+<meta property="og:description" content="枯燥乏味的原理研究">
 <meta property="og:locale" content="zh_CN">
-<meta property="og:image" content="http://example.com/.com//attach/202206/928079_YEHQKX7ZAKAH3UQ.png">
-<meta property="og:image" content="http://example.com/img/13.png">
-<meta property="og:image" content="http://example.com/img/14.png">
+<meta property="og:image" content="http://example.com/img/5522.png">
 <meta property="article:published_time" content="2022-06-26T13:02:52.000Z">
-<meta property="article:modified_time" content="2022-11-14T13:05:12.525Z">
+<meta property="article:modified_time" content="2022-11-30T13:24:02.955Z">
 <meta property="article:author" content="听说你是小兔叽">
-<meta name="twitter:card" content="summary_large_image">
-<meta name="twitter:image" content="http://example.com/.com//attach/202206/928079_YEHQKX7ZAKAH3UQ.png">
-  
-  
-  
-  <title>Frida工作原理学习 - 听说你是小兔叽的博客</title>
-
-  <link  rel="stylesheet" href="https://lib.baomitu.com/twitter-bootstrap/4.6.1/css/bootstrap.min.css" />
-
-
-
-  <link  rel="stylesheet" href="https://lib.baomitu.com/github-markdown-css/4.0.0/github-markdown.min.css" />
-
-  <link  rel="stylesheet" href="https://lib.baomitu.com/hint.css/2.7.0/hint.min.css" />
-
-  <link  rel="stylesheet" href="https://lib.baomitu.com/fancybox/3.5.7/jquery.fancybox.min.css" />
-
-
-
-<!-- 主题依赖的图标库，不要自行修改 -->
-<!-- Do not modify the link that theme dependent icons -->
-
-<link rel="stylesheet" href="//at.alicdn.com/t/font_1749284_hj8rtnfg7um.css">
-
-
-
-<link rel="stylesheet" href="//at.alicdn.com/t/font_1736178_lbnruvf0jn.css">
-
-
-<link  rel="stylesheet" href="/css/main.css" />
-
-
-  <link id="highlight-css" rel="stylesheet" href="/css/highlight.css" />
-  
-    <link id="highlight-css-dark" rel="stylesheet" href="/css/highlight-dark.css" />
-  
-
-
-
-
-  <script id="fluid-configs">
-    var Fluid = window.Fluid || {};
-    Fluid.ctx = Object.assign({}, Fluid.ctx)
-    var CONFIG = {"hostname":"example.com","root":"/","version":"1.9.3","typing":{"enable":true,"typeSpeed":70,"cursorChar":"_","loop":false,"scope":[]},"anchorjs":{"enable":true,"element":"h1,h2,h3,h4,h5,h6","placement":"left","visible":"hover","icon":""},"progressbar":{"enable":true,"height_px":3,"color":"#29d","options":{"showSpinner":false,"trickleSpeed":100}},"code_language":{"enable":true,"default":"TEXT"},"copy_btn":true,"image_caption":{"enable":true},"image_zoom":{"enable":true,"img_url_replace":["",""]},"toc":{"enable":true,"placement":"right","headingSelector":"h1,h2,h3,h4,h5,h6","collapseDepth":0},"lazyload":{"enable":true,"loading_img":"/img/loading.gif","onlypost":false,"offset_factor":2},"web_analytics":{"enable":false,"follow_dnt":true,"baidu":null,"google":null,"gtag":null,"tencent":{"sid":null,"cid":null},"woyaola":null,"cnzz":null,"leancloud":{"app_id":null,"app_key":null,"server_url":null,"path":"window.location.pathname","ignore_local":false}},"search_path":"/local-search.xml"};
-
-    if (CONFIG.web_analytics.follow_dnt) {
-      var dntVal = navigator.doNotTrack || window.doNotTrack || navigator.msDoNotTrack;
-      Fluid.ctx.dnt = dntVal && (dntVal.startsWith('1') || dntVal.startsWith('yes') || dntVal.startsWith('on'));
+<meta property="article:tag" content="frida">
+<meta name="twitter:card" content="summary">
+<meta name="twitter:image" content="http://example.com/img/5522.png"><link rel="shortcut icon" href="/img/favicon.png"><link rel="canonical" href="http://example.com/2022/06/26/Frida%E5%B7%A5%E4%BD%9C%E5%8E%9F%E7%90%86%E5%AD%A6%E4%B9%A0/"><link rel="preconnect" href="//cdn.jsdelivr.net"/><link rel="preconnect" href="//busuanzi.ibruce.info"/><meta/><link rel="stylesheet" href="/css/index.css"><link rel="stylesheet" href="https://cdn.jsdelivr.net/npm/@fortawesome/fontawesome-free/css/all.min.css" media="print" onload="this.media='all'"><link rel="stylesheet" href="https://cdn.jsdelivr.net/npm/node-snackbar/dist/snackbar.min.css" media="print" onload="this.media='all'"><link rel="stylesheet" href="https://cdn.jsdelivr.net/npm/@fancyapps/ui/dist/fancybox.min.css" media="print" onload="this.media='all'"><script>const GLOBAL_CONFIG = { 
+  root: '/',
+  algolia: undefined,
+  localSearch: {"path":"/search.xml","preload":false,"languages":{"hits_empty":"找不到您查询的内容：${query}"}},
+  translate: undefined,
+  noticeOutdate: undefined,
+  highlight: {"plugin":"highlighjs","highlightCopy":true,"highlightLang":true,"highlightHeightLimit":false},
+  copy: {
+    success: '复制成功',
+    error: '复制错误',
+    noSupport: '浏览器不支持'
+  },
+  relativeDate: {
+    homepage: true,
+    post: false
+  },
+  runtime: '',
+  date_suffix: {
+    just: '刚刚',
+    min: '分钟前',
+    hour: '小时前',
+    day: '天前',
+    month: '个月前'
+  },
+  copyright: undefined,
+  lightbox: 'fancybox',
+  Snackbar: {"chs_to_cht":"你已切换为繁体","cht_to_chs":"你已切换为简体","day_to_night":"你已切换为深色模式","night_to_day":"你已切换为浅色模式","bgLight":"#49b1f5","bgDark":"#1f1f1f","position":"bottom-left"},
+  source: {
+    justifiedGallery: {
+      js: 'https://cdn.jsdelivr.net/npm/flickr-justified-gallery/dist/fjGallery.min.js',
+      css: 'https://cdn.jsdelivr.net/npm/flickr-justified-gallery/dist/fjGallery.min.css'
     }
-  </script>
-  <script  src="/js/utils.js" ></script>
-  <script  src="/js/color-schema.js" ></script>
+  },
+  isPhotoFigcaption: false,
+  islazyload: false,
+  isAnchor: false
+}</script><script id="config-diff">var GLOBAL_CONFIG_SITE = {
+  title: 'Frida工作原理学习',
+  isPost: true,
+  isHome: false,
+  isHighlightShrink: false,
+  isToc: true,
+  postUpdate: '2022-11-30 21:24:02'
+}</script><noscript><style type="text/css">
+  #nav {
+    opacity: 1
+  }
+  .justified-gallery img {
+    opacity: 1
+  }
+
+  #recent-posts time,
+  #post-meta time {
+    display: inline !important
+  }
+</style></noscript><script>(win=>{
+    win.saveToLocal = {
+      set: function setWithExpiry(key, value, ttl) {
+        if (ttl === 0) return
+        const now = new Date()
+        const expiryDay = ttl * 86400000
+        const item = {
+          value: value,
+          expiry: now.getTime() + expiryDay,
+        }
+        localStorage.setItem(key, JSON.stringify(item))
+      },
+
+      get: function getWithExpiry(key) {
+        const itemStr = localStorage.getItem(key)
+
+        if (!itemStr) {
+          return undefined
+        }
+        const item = JSON.parse(itemStr)
+        const now = new Date()
+
+        if (now.getTime() > item.expiry) {
+          localStorage.removeItem(key)
+          return undefined
+        }
+        return item.value
+      }
+    }
   
-
-
+    win.getScript = url => new Promise((resolve, reject) => {
+      const script = document.createElement('script')
+      script.src = url
+      script.async = true
+      script.onerror = reject
+      script.onload = script.onreadystatechange = function() {
+        const loadState = this.readyState
+        if (loadState && loadState !== 'loaded' && loadState !== 'complete') return
+        script.onload = script.onreadystatechange = null
+        resolve()
+      }
+      document.head.appendChild(script)
+    })
   
-<meta name="generator" content="Hexo 6.3.0"></head>
-
-
-<body>
-  
-
-  <header>
+      win.activateDarkMode = function () {
+        document.documentElement.setAttribute('data-theme', 'dark')
+        if (document.querySelector('meta[name="theme-color"]') !== null) {
+          document.querySelector('meta[name="theme-color"]').setAttribute('content', '#0d0d0d')
+        }
+      }
+      win.activateLightMode = function () {
+        document.documentElement.setAttribute('data-theme', 'light')
+        if (document.querySelector('meta[name="theme-color"]') !== null) {
+          document.querySelector('meta[name="theme-color"]').setAttribute('content', '#ffffff')
+        }
+      }
+      const t = saveToLocal.get('theme')
     
-
-<div class="header-inner" style="height: 70vh;">
-  <nav id="navbar" class="navbar fixed-top  navbar-expand-lg navbar-dark scrolling-navbar">
-  <div class="container">
-    <a class="navbar-brand" href="/">
-      <strong>听说你是小兔叽 个人博客</strong>
-    </a>
-
-    <button id="navbar-toggler-btn" class="navbar-toggler" type="button" data-toggle="collapse"
-            data-target="#navbarSupportedContent"
-            aria-controls="navbarSupportedContent" aria-expanded="false" aria-label="Toggle navigation">
-      <div class="animated-icon"><span></span><span></span><span></span></div>
-    </button>
-
-    <!-- Collapsible content -->
-    <div class="collapse navbar-collapse" id="navbarSupportedContent">
-      <ul class="navbar-nav ml-auto text-center">
+          if (t === 'dark') activateDarkMode()
+          else if (t === 'light') activateLightMode()
         
-          
-          
-          
-          
-            <li class="nav-item">
-              <a class="nav-link" href="/">
-                <i class="iconfont icon-home-fill"></i>
-                首页
-              </a>
-            </li>
-          
-        
-          
-          
-          
-          
-            <li class="nav-item">
-              <a class="nav-link" href="/archives/">
-                <i class="iconfont icon-archive-fill"></i>
-                归档
-              </a>
-            </li>
-          
-        
-          
-          
-          
-          
-            <li class="nav-item">
-              <a class="nav-link" href="/categories/">
-                <i class="iconfont icon-category-fill"></i>
-                分类
-              </a>
-            </li>
-          
-        
-          
-          
-          
-          
-            <li class="nav-item">
-              <a class="nav-link" href="/tags/">
-                <i class="iconfont icon-tags-fill"></i>
-                标签
-              </a>
-            </li>
-          
-        
-          
-          
-          
-          
-            <li class="nav-item">
-              <a class="nav-link" href="/about/">
-                <i class="iconfont icon-user-fill"></i>
-                关于
-              </a>
-            </li>
-          
-        
-        
-          <li class="nav-item" id="search-btn">
-            <a class="nav-link" target="_self" href="javascript:;" data-toggle="modal" data-target="#modalSearch" aria-label="Search">
-              &nbsp;<i class="iconfont icon-search"></i>&nbsp;
-            </a>
-          </li>
-          
-        
-        
-          <li class="nav-item" id="color-toggle-btn">
-            <a class="nav-link" target="_self" href="javascript:;" aria-label="Color Toggle">&nbsp;<i
-                class="iconfont icon-dark" id="color-toggle-icon"></i>&nbsp;</a>
-          </li>
-        
-      </ul>
-    </div>
-  </div>
-</nav>
-
-  
-
-<div id="banner" class="banner" parallax=true
-     style="background: url('/img/default.png') no-repeat center center; background-size: cover;">
-  <div class="full-bg-img">
-    <div class="mask flex-center" style="background-color: rgba(0, 0, 0, 0.3)">
-      <div class="banner-text text-center fade-in-up">
-        <div class="h2">
-          
-            <span id="subtitle" data-typed-text="Frida工作原理学习"></span>
-          
-        </div>
-
-        
-          
-  <div class="mt-3">
+      const asideStatus = saveToLocal.get('aside-status')
+      if (asideStatus !== undefined) {
+        if (asideStatus === 'hide') {
+          document.documentElement.classList.add('hide-aside')
+        } else {
+          document.documentElement.classList.remove('hide-aside')
+        }
+      }
     
-    
-      <span class="post-meta">
-        <i class="iconfont icon-date-fill" aria-hidden="true"></i>
-        <time datetime="2022-06-26 21:02" pubdate>
-          2022年6月26日 晚上
-        </time>
-      </span>
-    
-  </div>
-
-  <div class="mt-1">
-    
-      <span class="post-meta mr-2">
-        <i class="iconfont icon-chart"></i>
-        
-          9.8k 字
-        
-      </span>
-    
-
-    
-      <span class="post-meta mr-2">
-        <i class="iconfont icon-clock-fill"></i>
-        
-        
-        
-          82 分钟
-        
-      </span>
-    
-
-    
-    
-  </div>
-
-
-        
-      </div>
-
-      
-    </div>
-  </div>
-</div>
-
-</div>
-
-  </header>
-
-  <main>
-    
-      
-
-<div class="container-fluid nopadding-x">
-  <div class="row nomargin-x">
-    <div class="side-col d-none d-lg-block col-lg-2">
-      
-
-    </div>
-
-    <div class="col-lg-8 nopadding-x-md">
-      <div class="container nopadding-x-md" id="board-ctn">
-        <div id="board">
-          <article class="post-content mx-auto">
-            <!-- SEO header -->
-            <h1 style="display: none">Frida工作原理学习</h1>
-            
-            
-              <div class="markdown-body">
-                
-                <h1 id="frida介绍"><a href="#frida介绍" class="headerlink" title="frida介绍"></a>frida介绍</h1><p>frida是一款便携的,自由的,支持全平台的,hook框架，可以通过编写JavaScript,Python代码来和frida_server端进行交互,还记得当年用xposed时那种写了一大堆代码每次修改都要重新打包安装重启手机,那种调试调到头皮发麻的痛苦百分之30的时间都是在那里安装重启安装重启直到有一天遇到了小甜甜。</p>
-<h1 id="frida的代码结构"><a href="#frida的代码结构" class="headerlink" title="frida的代码结构"></a>frida的代码结构</h1><figure class="highlight http"><table><tr><td class="gutter"><pre><span class="line">1</span><br><span class="line">2</span><br><span class="line">3</span><br><span class="line">4</span><br><span class="line">5</span><br><span class="line">6</span><br><span class="line">7</span><br><span class="line">8</span><br><span class="line">9</span><br></pre></td><td class="code"><pre><code class="hljs http"><span class="hljs-attribute">frida-core</span><span class="hljs-punctuation">: </span>Frida 核心库<br><span class="hljs-attribute">frida-gum</span><span class="hljs-punctuation">: </span>inline-hook 框架<br><span class="hljs-attribute">bindings</span><span class="hljs-punctuation">: </span><br><span class="hljs-attribute">frida-python</span><span class="hljs-punctuation">: </span>python<br><span class="hljs-attribute">frida-node</span><span class="hljs-punctuation">: </span>Node.js<br><span class="hljs-attribute">frida-qml</span><span class="hljs-punctuation">: </span>Qml<br><span class="hljs-attribute">frida-swift</span><span class="hljs-punctuation">: </span>Swift<br><span class="hljs-attribute">frida-tools</span><span class="hljs-punctuation">: </span>CLI tools<br><span class="hljs-attribute">capstone</span><span class="hljs-punctuation">: </span>instruction disammbler<br></code></pre></td></tr></table></figure>
+    const detectApple = () => {
+      if(/iPad|iPhone|iPod|Macintosh/.test(navigator.userAgent)){
+        document.documentElement.classList.add('apple')
+      }
+    }
+    detectApple()
+    })(window)</script><meta name="generator" content="Hexo 6.3.0"></head><body><div id="web_bg"></div><div id="sidebar"><div id="menu-mask"></div><div id="sidebar-menus"><div class="avatar-img is-center"><img src="/img/favicon.png" onerror="onerror=null;src='/img/friend_404.gif'" alt="avatar"/></div><div class="sidebar-site-data site-data is-center"><a href="/archives/"><div class="headline">文章</div><div class="length-num">10</div></a><a href="/tags/"><div class="headline">标签</div><div class="length-num">14</div></a><a href="/categories/"><div class="headline">分类</div><div class="length-num">0</div></a></div><hr/><div class="menus_items"><div class="menus_item"><a class="site-page" href="/"><i class="fa-fw fas fa-home"></i><span> Home</span></a></div><div class="menus_item"><a class="site-page" href="/archives/"><i class="fa-fw fas fa-archive"></i><span> Archives</span></a></div></div></div></div><div class="post" id="body-wrap"><header class="not-top-img" id="page-header"><nav id="nav"><span id="blog_name"><a id="site-name" href="/">听说你是小兔叽的博客</a></span><div id="menus"><div id="search-button"><a class="site-page social-icon search"><i class="fas fa-search fa-fw"></i><span> 搜索</span></a></div><div class="menus_items"><div class="menus_item"><a class="site-page" href="/"><i class="fa-fw fas fa-home"></i><span> Home</span></a></div><div class="menus_item"><a class="site-page" href="/archives/"><i class="fa-fw fas fa-archive"></i><span> Archives</span></a></div></div><div id="toggle-menu"><a class="site-page"><i class="fas fa-bars fa-fw"></i></a></div></div></nav></header><main class="layout" id="content-inner"><div id="post"><div id="post-info"><h1 class="post-title">Frida工作原理学习</h1><div id="post-meta"><div class="meta-firstline"><span class="post-meta-date"><i class="far fa-calendar-alt fa-fw post-meta-icon"></i><span class="post-meta-label">发表于</span><time class="post-meta-date-created" datetime="2022-06-26T13:02:52.000Z" title="发表于 2022-06-26 21:02:52">2022-06-26</time><span class="post-meta-separator">|</span><i class="fas fa-history fa-fw post-meta-icon"></i><span class="post-meta-label">更新于</span><time class="post-meta-date-updated" datetime="2022-11-30T13:24:02.955Z" title="更新于 2022-11-30 21:24:02">2022-11-30</time></span></div><div class="meta-secondline"><span class="post-meta-separator">|</span><span class="post-meta-pv-cv" id="" data-flag-title="Frida工作原理学习"><i class="far fa-eye fa-fw post-meta-icon"></i><span class="post-meta-label">阅读量:</span><span id="busuanzi_value_page_pv"><i class="fa-solid fa-spinner fa-spin"></i></span></span><span class="post-meta-separator">|</span><span class="post-meta-commentcount"><i class="far fa-comments fa-fw post-meta-icon"></i><span class="post-meta-label">评论数:</span><a href="/2022/06/26/Frida%E5%B7%A5%E4%BD%9C%E5%8E%9F%E7%90%86%E5%AD%A6%E4%B9%A0/#post-comment" itemprop="discussionUrl"><span class="valine-comment-count" data-xid="/2022/06/26/Frida%E5%B7%A5%E4%BD%9C%E5%8E%9F%E7%90%86%E5%AD%A6%E4%B9%A0/" itemprop="commentCount"><i class="fa-solid fa-spinner fa-spin"></i></span></a></span></div></div></div><article class="post-content" id="article-container"><h1 id="frida介绍"><a href="#frida介绍" class="headerlink" title="frida介绍"></a>frida介绍</h1><p>frida是一款便携的,自由的,支持全平台的,hook框架，可以通过编写JavaScript,Python代码来和frida_server端进行交互,还记得当年用xposed时那种写了一大堆代码每次修改都要重新打包安装重启手机,那种调试调到头皮发麻的痛苦百分之30的时间都是在那里安装重启安装重启直到有一天遇到了小甜甜。</p>
+<h1 id="frida的代码结构"><a href="#frida的代码结构" class="headerlink" title="frida的代码结构"></a>frida的代码结构</h1><figure class="highlight plaintext"><table><tr><td class="gutter"><pre><span class="line">1</span><br><span class="line">2</span><br><span class="line">3</span><br><span class="line">4</span><br><span class="line">5</span><br><span class="line">6</span><br><span class="line">7</span><br><span class="line">8</span><br><span class="line">9</span><br></pre></td><td class="code"><pre><code class="hljs plaintext">frida-core: Frida 核心库<br>frida-gum: inline-hook 框架<br>bindings: <br>frida-python: python<br>frida-node: Node.js<br>frida-qml: Qml<br>frida-swift: Swift<br>frida-tools: CLI tools<br>capstone: instruction disammbler<br></code></pre></td></tr></table></figure>
 <p>Frida的核心是c编写的有多种语言绑定例如 Node.js、 Python、 Swift、 .NET、 Qml<br>一般我们都使用js去编写frida脚本因为js的异常处理机制非常棒相比于其他语言更高效好用。</p>
 <h2 id="frida-core"><a href="#frida-core" class="headerlink" title="frida-core"></a>frida-core</h2><p>frida-core的功能有进程注入、进程间通信、会话管理、脚本生命周期管理等功能，屏蔽部分底层的实现细节并给最终用户提供开箱即用的操作接口。而这一切的实现都在 frida-core 之中，正如名字所言，这其中包含了 frida 相关的大部分关键模块和组件，比如 frida-server、frida-gadget、frida-agent、frida-helper、frida-inject 以及之间的互相通信底座。</p>
 <h2 id="frida-gum"><a href="#frida-gum" class="headerlink" title="frida-gum"></a>frida-gum</h2><p>frida-gum是基于inline-hook实现的他还有很多丰富的功能比如用于代码跟踪 Stalker、用于内存访问监控的MemoryAccessMonitor，以及符号查找、栈回溯实现、内存扫描、动态代码生成和重定位等。</p>
 <h3 id="Interceptor"><a href="#Interceptor" class="headerlink" title="Interceptor"></a>Interceptor</h3><p>Interceptor 是 inline-hook 的封装</p>
-<figure class="highlight angelscript"><table><tr><td class="gutter"><pre><span class="line">1</span><br><span class="line">2</span><br><span class="line">3</span><br><span class="line">4</span><br><span class="line">5</span><br><span class="line">6</span><br><span class="line">7</span><br><span class="line">8</span><br><span class="line">9</span><br><span class="line">10</span><br><span class="line">11</span><br><span class="line">12</span><br><span class="line">13</span><br><span class="line">14</span><br><span class="line">15</span><br><span class="line">16</span><br><span class="line">17</span><br><span class="line">18</span><br><span class="line">19</span><br><span class="line">20</span><br><span class="line">21</span><br><span class="line">22</span><br></pre></td><td class="code"><pre><code class="hljs angelscript">GumInterceptor * <span class="hljs-built_in">int</span>erceptor;<br>GumInvocationListener * listener;<br>gum_init ();<br><span class="hljs-built_in">int</span>erceptor = gum_interceptor_obtain ();<br><span class="hljs-comment">//GumInvocationListener*的接口</span><br>listener = g_object_new (EXAMPLE_TYPE_LISTENER, NULL);<br><br><span class="hljs-comment">// 开始 hook `open` 函数</span><br>gum_interceptor_begin_transaction (<span class="hljs-built_in">int</span>erceptor);<br>gum_interceptor_attach_listener (<span class="hljs-built_in">int</span>erceptor,<br>      GSIZE_TO_POINTER (gum_module_find_export_by_name (NULL, <span class="hljs-string">&quot;open&quot;</span>)),<br>      listener,<br>      GSIZE_TO_POINTER (EXAMPLE_HOOK_OPEN));<br>gum_interceptor_end_transaction (<span class="hljs-built_in">int</span>erceptor);<br><br><span class="hljs-comment">// 测试 hook 效果</span><br>close (open (<span class="hljs-string">&quot;/etc/hosts&quot;</span>, O_RDONLY));<br><br><span class="hljs-comment">// 结束 hook</span><br>gum_interceptor_detach_listener (<span class="hljs-built_in">int</span>erceptor, listener);<br>g_object_unref (listener);<br>g_object_unref (<span class="hljs-built_in">int</span>erceptor);<br></code></pre></td></tr></table></figure>
+<figure class="highlight plaintext"><table><tr><td class="gutter"><pre><span class="line">1</span><br><span class="line">2</span><br><span class="line">3</span><br><span class="line">4</span><br><span class="line">5</span><br><span class="line">6</span><br><span class="line">7</span><br><span class="line">8</span><br><span class="line">9</span><br><span class="line">10</span><br><span class="line">11</span><br><span class="line">12</span><br><span class="line">13</span><br><span class="line">14</span><br><span class="line">15</span><br><span class="line">16</span><br><span class="line">17</span><br><span class="line">18</span><br><span class="line">19</span><br><span class="line">20</span><br><span class="line">21</span><br><span class="line">22</span><br></pre></td><td class="code"><pre><code class="hljs plaintext">GumInterceptor * interceptor;<br>GumInvocationListener * listener;<br>gum_init ();<br>interceptor = gum_interceptor_obtain ();<br>//GumInvocationListener*的接口<br>listener = g_object_new (EXAMPLE_TYPE_LISTENER, NULL);<br><br>// 开始 hook `open` 函数<br>gum_interceptor_begin_transaction (interceptor);<br>gum_interceptor_attach_listener (interceptor,<br>      GSIZE_TO_POINTER (gum_module_find_export_by_name (NULL, &quot;open&quot;)),<br>      listener,<br>      GSIZE_TO_POINTER (EXAMPLE_HOOK_OPEN));<br>gum_interceptor_end_transaction (interceptor);<br><br>// 测试 hook 效果<br>close (open (&quot;/etc/hosts&quot;, O_RDONLY));<br><br>// 结束 hook<br>gum_interceptor_detach_listener (interceptor, listener);<br>g_object_unref (listener);<br>g_object_unref (interceptor);<br></code></pre></td></tr></table></figure>
 <h3 id="Stalker"><a href="#Stalker" class="headerlink" title="Stalker"></a>Stalker</h3><p>潜行者又称为尾行痴汉，可以实现指定线程中所有函数、所有基本块、甚至所有指令的跟踪但是有很大的缺点比如在32位或者thumb下问题很大,一般想使用指令跟踪都是使用内存断点或者unidbg模拟执行so但是有很多问题，内存断点的反调试倒是很容易解决但是性能是一个很大的缺陷代码触发断点后会先中断到内核态，然后再返回到用户态(调试器)执行跟踪回调，处理完后再返回内核态，然后再回到用户态继续执行，这来来回回的黄花菜都凉了。但Unidbg的使用门槛动不动就补环境，龙哥说样本和Unidbg之间摩擦出的火花才是最迷人的。或者说人话——“他妈的Unidbg怎么又报错了，我该怎么办？”</p>
 <p>Stalker的简单使用</p>
-<figure class="highlight awk"><table><tr><td class="gutter"><pre><span class="line">1</span><br><span class="line">2</span><br><span class="line">3</span><br><span class="line">4</span><br><span class="line">5</span><br><span class="line">6</span><br><span class="line">7</span><br><span class="line">8</span><br><span class="line">9</span><br><span class="line">10</span><br><span class="line">11</span><br><span class="line">12</span><br><span class="line">13</span><br><span class="line">14</span><br><span class="line">15</span><br><span class="line">16</span><br><span class="line">17</span><br><span class="line">18</span><br><span class="line">19</span><br><span class="line">20</span><br><span class="line">21</span><br><span class="line">22</span><br><span class="line">23</span><br><span class="line">24</span><br><span class="line">25</span><br><span class="line">26</span><br><span class="line">27</span><br><span class="line">28</span><br><span class="line">29</span><br><span class="line">30</span><br></pre></td><td class="code"><pre><code class="hljs awk">Interceptor.attach(addr, &#123;<br>       onEnter: <span class="hljs-keyword">function</span> (args) &#123;<br>           this.args0 = args[<span class="hljs-number">0</span>];<br>           this.tid = Process.getCurrentThreadId();<br>           <span class="hljs-regexp">//</span>跟随<br>           Stalker.follow(this.tid, &#123;<br>               events: &#123;<span class="hljs-regexp">//</span>事件<br>                   call: true,<span class="hljs-regexp">//</span>呼叫<br>                   ret: false,<span class="hljs-regexp">//</span>返回<br>                   exec: true,<span class="hljs-regexp">//</span>执行<br>                   block: false,<span class="hljs-regexp">//</span>块<br>                   compile: false<span class="hljs-regexp">//</span>编译<br>               &#125;,<br>               <span class="hljs-regexp">//</span>接收<br>               onReceive(events)&#123;<br>                   <span class="hljs-keyword">for</span> (const [index,value] of Stalker.parse(events)) &#123;<br>                       console.log(index,value);<br>                       <span class="hljs-regexp">//</span>findModuleByAddress    &#123;<span class="hljs-string">&quot;name&quot;</span>:<span class="hljs-string">&quot;libc.so&quot;</span>,<span class="hljs-string">&quot;base&quot;</span>:<span class="hljs-string">&quot;0x7d1f0af000&quot;</span>,<span class="hljs-string">&quot;size&quot;</span>:<span class="hljs-number">3178496</span>,<span class="hljs-string">&quot;path&quot;</span>:<span class="hljs-string">&quot;/apex/com.android.runtime/lib64/bionic/libc.so&quot;</span>&#125;<br>                       <span class="hljs-regexp">//</span>console.log(<span class="hljs-string">&quot;tuzi&quot;</span>,Process.findModuleByAddress(<span class="hljs-number">0</span>x7d1f13adb8));<br><br>                   &#125;<br>               &#125;<br>               <span class="hljs-regexp">//</span> onCallSummary(summay)&#123;<br>               <span class="hljs-regexp">//</span>console.log(<span class="hljs-string">&quot;onCallSummary&quot;</span>+JSON.stringify(summay));<br>               <span class="hljs-regexp">//</span> &#125;,<br>           &#125;);<br>       &#125;, onLeave: <span class="hljs-keyword">function</span> (retval) &#123;<br>           Stalker.unfollow(this.tid);<br>       &#125;<br>   &#125;);<br></code></pre></td></tr></table></figure>
-<p>Stalker也可以用来还原ollvm混淆 记录函数的真实执行地址结合ida反汇编没执行的代码都nop掉可以很大程度上帮助辅助混淆算法分析当然可能不太准确但也是一种非常棒的思路。<br>Stalker的功能实现，在线程即将执行下一条指令前，先将目标指令拷贝一份到新建的内存中，然后在新的内存中对代码进行插桩，如下图所示:<br> <img src="/.com//attach/202206/928079_YEHQKX7ZAKAH3UQ.png" srcset="/img/loading.gif" lazyload><br>这其中使用到了代码动态重编译的方法，好处是原本的代码没有被修改，因此即便代码有完整性校验也不影响，另外由于执行过程都在用户态，省去了多次中断内核切换，性能损耗也达到了可以接受的水平。由于代码的位置发生了改变，如前文 Interceptor 一样，同样要对代码进行重定位的修复</p>
+<figure class="highlight plaintext"><table><tr><td class="gutter"><pre><span class="line">1</span><br><span class="line">2</span><br><span class="line">3</span><br><span class="line">4</span><br><span class="line">5</span><br><span class="line">6</span><br><span class="line">7</span><br><span class="line">8</span><br><span class="line">9</span><br><span class="line">10</span><br><span class="line">11</span><br><span class="line">12</span><br><span class="line">13</span><br><span class="line">14</span><br><span class="line">15</span><br><span class="line">16</span><br><span class="line">17</span><br><span class="line">18</span><br><span class="line">19</span><br><span class="line">20</span><br><span class="line">21</span><br><span class="line">22</span><br><span class="line">23</span><br><span class="line">24</span><br><span class="line">25</span><br><span class="line">26</span><br><span class="line">27</span><br><span class="line">28</span><br><span class="line">29</span><br><span class="line">30</span><br></pre></td><td class="code"><pre><code class="hljs plaintext">Interceptor.attach(addr, &#123;<br>       onEnter: function (args) &#123;<br>           this.args0 = args[0];<br>           this.tid = Process.getCurrentThreadId();<br>           //跟随<br>           Stalker.follow(this.tid, &#123;<br>               events: &#123;//事件<br>                   call: true,//呼叫<br>                   ret: false,//返回<br>                   exec: true,//执行<br>                   block: false,//块<br>                   compile: false//编译<br>               &#125;,<br>               //接收<br>               onReceive(events)&#123;<br>                   for (const [index,value] of Stalker.parse(events)) &#123;<br>                       console.log(index,value);<br>                       //findModuleByAddress    &#123;&quot;name&quot;:&quot;libc.so&quot;,&quot;base&quot;:&quot;0x7d1f0af000&quot;,&quot;size&quot;:3178496,&quot;path&quot;:&quot;/apex/com.android.runtime/lib64/bionic/libc.so&quot;&#125;<br>                       //console.log(&quot;tuzi&quot;,Process.findModuleByAddress(0x7d1f13adb8));<br><br>                   &#125;<br>               &#125;<br>               // onCallSummary(summay)&#123;<br>               //console.log(&quot;onCallSummary&quot;+JSON.stringify(summay));<br>               // &#125;,<br>           &#125;);<br>       &#125;, onLeave: function (retval) &#123;<br>           Stalker.unfollow(this.tid);<br>       &#125;<br>   &#125;);<br></code></pre></td></tr></table></figure>
+<p>Stalker也可以用来还原ollvm混淆 记录函数的真实执行地址结合ida反汇编没执行的代码都nop掉可以很大程度上帮助辅助混淆算法分析当然可能不太准确但也是一种非常棒的思路。<br>Stalker的功能实现，在线程即将执行下一条指令前，先将目标指令拷贝一份到新建的内存中，然后在新的内存中对代码进行插桩，如下图所示:<br> <img src="/.com//attach/202206/928079_YEHQKX7ZAKAH3UQ.png"><br>这其中使用到了代码动态重编译的方法，好处是原本的代码没有被修改，因此即便代码有完整性校验也不影响，另外由于执行过程都在用户态，省去了多次中断内核切换，性能损耗也达到了可以接受的水平。由于代码的位置发生了改变，如前文 Interceptor 一样，同样要对代码进行重定位的修复</p>
 <h3 id="内存监控"><a href="#内存监控" class="headerlink" title="内存监控"></a>内存监控</h3><p>MemoryAccessMonitor可以实现对指定内存区间的访问监控，在目标内存区间发生读写行为时可以触发用户指定的回调函数。</p>
 <p>通过阅读源码发现这个功能的实现方法非常简洁，本质上是将目标内存页设置为不可读写，这样在发生读写行为时会触发事先注册好的中断处理函数，其中会调用到用户使用 gum_memory_access_monitor_new 注册的回调方法中。</p>
-<figure class="highlight rust"><table><tr><td class="gutter"><pre><span class="line">1</span><br><span class="line">2</span><br><span class="line">3</span><br><span class="line">4</span><br><span class="line">5</span><br><span class="line">6</span><br><span class="line">7</span><br><span class="line">8</span><br><span class="line">9</span><br><span class="line">10</span><br><span class="line">11</span><br><span class="line">12</span><br><span class="line">13</span><br></pre></td><td class="code"><pre><code class="hljs rust"><span class="hljs-comment">//C 代码</span><br>gboolean<br><span class="hljs-title function_ invoke__">gum_memory_access_monitor_enable</span> (GumMemoryAccessMonitor * <span class="hljs-keyword">self</span>,<br>                                  GError ** error)<br>&#123;<br>  <span class="hljs-title function_ invoke__">if</span> (<span class="hljs-keyword">self</span><span class="hljs-punctuation">-&gt;</span>enabled)<br>    <span class="hljs-keyword">return</span> TRUE;<br>  <span class="hljs-comment">// ...</span><br>  <span class="hljs-keyword">self</span><span class="hljs-punctuation">-&gt;</span>exceptor = <span class="hljs-title function_ invoke__">gum_exceptor_obtain</span> ();<br>  <span class="hljs-title function_ invoke__">gum_exceptor_add</span> (<span class="hljs-keyword">self</span><span class="hljs-punctuation">-&gt;</span>exceptor, gum_memory_access_monitor_on_exception,<br>      <span class="hljs-keyword">self</span>);<br>  <span class="hljs-comment">// ...</span><br>&#125;<br></code></pre></td></tr></table></figure>
+<figure class="highlight plaintext"><table><tr><td class="gutter"><pre><span class="line">1</span><br><span class="line">2</span><br><span class="line">3</span><br><span class="line">4</span><br><span class="line">5</span><br><span class="line">6</span><br><span class="line">7</span><br><span class="line">8</span><br><span class="line">9</span><br><span class="line">10</span><br><span class="line">11</span><br><span class="line">12</span><br><span class="line">13</span><br></pre></td><td class="code"><pre><code class="hljs plaintext">//C 代码<br>gboolean<br>gum_memory_access_monitor_enable (GumMemoryAccessMonitor * self,<br>                                  GError ** error)<br>&#123;<br>  if (self-&gt;enabled)<br>    return TRUE;<br>  // ...<br>  self-&gt;exceptor = gum_exceptor_obtain ();<br>  gum_exceptor_add (self-&gt;exceptor, gum_memory_access_monitor_on_exception,<br>      self);<br>  // ...<br>&#125;<br></code></pre></td></tr></table></figure>
 
-<figure class="highlight reasonml"><table><tr><td class="gutter"><pre><span class="line">1</span><br><span class="line">2</span><br><span class="line">3</span><br><span class="line">4</span><br><span class="line">5</span><br><span class="line">6</span><br><span class="line">7</span><br><span class="line">8</span><br><span class="line">9</span><br><span class="line">10</span><br><span class="line">11</span><br><span class="line">12</span><br><span class="line">13</span><br><span class="line">14</span><br><span class="line">15</span><br><span class="line">16</span><br><span class="line">17</span><br><span class="line">18</span><br><span class="line">19</span><br><span class="line">20</span><br><span class="line">21</span><br><span class="line">22</span><br><span class="line">23</span><br><span class="line">24</span><br><span class="line">25</span><br><span class="line">26</span><br><span class="line">27</span><br><span class="line">28</span><br><span class="line">29</span><br><span class="line">30</span><br><span class="line">31</span><br><span class="line">32</span><br><span class="line">33</span><br><span class="line">34</span><br><span class="line">35</span><br></pre></td><td class="code"><pre><code class="hljs reasonml"><span class="hljs-comment">//js代码</span><br><span class="hljs-keyword">function</span> read<span class="hljs-constructor">_write_break()</span>&#123;<br>    <span class="hljs-keyword">function</span> hook<span class="hljs-constructor">_dlopen(<span class="hljs-params">addr</span>, <span class="hljs-params">soName</span>, <span class="hljs-params">callback</span>)</span> &#123;<br>        <span class="hljs-module-access"><span class="hljs-module"><span class="hljs-identifier">Interceptor</span>.</span></span>attach(addr, &#123;<br>            onEnter: <span class="hljs-keyword">function</span> (args) &#123;<br>                var soPath = args<span class="hljs-literal">[<span class="hljs-number">0</span>]</span>.read<span class="hljs-constructor">CString()</span>;<br>                <span class="hljs-keyword">if</span>(soPath.index<span class="hljs-constructor">Of(<span class="hljs-params">soName</span>)</span> != -<span class="hljs-number">1</span>) hook<span class="hljs-constructor">_call_constructors()</span>;<br>            &#125;, onLeave: <span class="hljs-keyword">function</span> (retval) &#123;<br>            &#125;<br>        &#125;);<br>    &#125;<br>    var dlopen = <span class="hljs-module-access"><span class="hljs-module"><span class="hljs-identifier">Module</span>.</span></span>find<span class="hljs-constructor">ExportByName(<span class="hljs-string">&quot;libdl.so&quot;</span>, <span class="hljs-string">&quot;dlopen&quot;</span>)</span>;<br>    var android_dlopen_ext = <span class="hljs-module-access"><span class="hljs-module"><span class="hljs-identifier">Module</span>.</span></span>find<span class="hljs-constructor">ExportByName(<span class="hljs-string">&quot;libdl.so&quot;</span>, <span class="hljs-string">&quot;android_dlopen_ext&quot;</span>)</span>;<br>    hook<span class="hljs-constructor">_dlopen(<span class="hljs-params">dlopen</span>, <span class="hljs-string">&quot;libaes.so&quot;</span>, <span class="hljs-params">set_read_write_break</span>)</span>;<br>    hook<span class="hljs-constructor">_dlopen(<span class="hljs-params">android_dlopen_ext</span>, <span class="hljs-string">&quot;libaes.so&quot;</span>, <span class="hljs-params">set_read_write_break</span>)</span>;<br><br>    <span class="hljs-keyword">function</span> set<span class="hljs-constructor">_read_write_break()</span>&#123;<br>        <span class="hljs-comment">//实现一个异常回调   处理好这个异常就可以正常返回</span><br>        <span class="hljs-module-access"><span class="hljs-module"><span class="hljs-identifier">Process</span>.</span></span>set<span class="hljs-constructor">ExceptionHandler(<span class="hljs-params">function</span>(<span class="hljs-params">details</span>)</span> &#123;<br>            console.log(<span class="hljs-module-access"><span class="hljs-module"><span class="hljs-identifier">JSON</span>.</span></span>stringify(details, null, <span class="hljs-number">2</span>));<br>            console.log(<span class="hljs-string">&quot;lr&quot;</span>, <span class="hljs-module-access"><span class="hljs-module"><span class="hljs-identifier">DebugSymbol</span>.</span></span>from<span class="hljs-constructor">Address(<span class="hljs-params">details</span>.<span class="hljs-params">context</span>.<span class="hljs-params">lr</span>)</span>);<br>            console.log(<span class="hljs-string">&quot;pc&quot;</span>, <span class="hljs-module-access"><span class="hljs-module"><span class="hljs-identifier">DebugSymbol</span>.</span></span>from<span class="hljs-constructor">Address(<span class="hljs-params">details</span>.<span class="hljs-params">context</span>.<span class="hljs-params">pc</span>)</span>);<br>            <span class="hljs-module-access"><span class="hljs-module"><span class="hljs-identifier">Memory</span>.</span></span>protect(details.memory.address, <span class="hljs-module-access"><span class="hljs-module"><span class="hljs-identifier">Process</span>.</span></span>pointerSize, &#x27;rwx&#x27;);<br>            console.log(<span class="hljs-module-access"><span class="hljs-module"><span class="hljs-identifier">Thread</span>.</span></span>backtrace(details.context, Backtracer.ACCURATE).map(<span class="hljs-module-access"><span class="hljs-module"><span class="hljs-identifier">DebugSymbol</span>.</span></span>fromAddress).join(<span class="hljs-character">&#x27;\n&#x27;</span>) + <span class="hljs-character">&#x27;\n&#x27;</span>);<br>            return <span class="hljs-literal">true</span>;<br>        &#125;);<br>        var addr = <span class="hljs-module-access"><span class="hljs-module"><span class="hljs-identifier">Module</span>.</span></span>find<span class="hljs-constructor">BaseAddress(<span class="hljs-string">&quot;libaes.so&quot;</span>)</span>.add(<span class="hljs-number">0x6666</span>);<br>        <span class="hljs-module-access"><span class="hljs-module"><span class="hljs-identifier">Memory</span>.</span></span>protect(addr, <span class="hljs-number">8</span>, &#x27;---&#x27;); <span class="hljs-comment">//修改内存页的权限</span><br>        <span class="hljs-comment">/**</span><br><span class="hljs-comment">         * 比如有一个地址是0x12345678  我想看一下是那个代码去访问了这个地址</span><br><span class="hljs-comment">         * 我只需要把这个内存地址置空 有函数去访问这个地址时 就会触发非法访问异常</span><br><span class="hljs-comment">         * 比较鸡肋这种方法 这种方法会一次修改一个内存页  并且触发一次就无效了</span><br><span class="hljs-comment">         */</span><br>    &#125;<br>&#125;<br></code></pre></td></tr></table></figure>
+<figure class="highlight plaintext"><table><tr><td class="gutter"><pre><span class="line">1</span><br><span class="line">2</span><br><span class="line">3</span><br><span class="line">4</span><br><span class="line">5</span><br><span class="line">6</span><br><span class="line">7</span><br><span class="line">8</span><br><span class="line">9</span><br><span class="line">10</span><br><span class="line">11</span><br><span class="line">12</span><br><span class="line">13</span><br><span class="line">14</span><br><span class="line">15</span><br><span class="line">16</span><br><span class="line">17</span><br><span class="line">18</span><br><span class="line">19</span><br><span class="line">20</span><br><span class="line">21</span><br><span class="line">22</span><br><span class="line">23</span><br><span class="line">24</span><br><span class="line">25</span><br><span class="line">26</span><br><span class="line">27</span><br><span class="line">28</span><br><span class="line">29</span><br><span class="line">30</span><br><span class="line">31</span><br><span class="line">32</span><br><span class="line">33</span><br><span class="line">34</span><br><span class="line">35</span><br></pre></td><td class="code"><pre><code class="hljs plaintext">//js代码<br>function read_write_break()&#123;<br>    function hook_dlopen(addr, soName, callback) &#123;<br>        Interceptor.attach(addr, &#123;<br>            onEnter: function (args) &#123;<br>                var soPath = args[0].readCString();<br>                if(soPath.indexOf(soName) != -1) hook_call_constructors();<br>            &#125;, onLeave: function (retval) &#123;<br>            &#125;<br>        &#125;);<br>    &#125;<br>    var dlopen = Module.findExportByName(&quot;libdl.so&quot;, &quot;dlopen&quot;);<br>    var android_dlopen_ext = Module.findExportByName(&quot;libdl.so&quot;, &quot;android_dlopen_ext&quot;);<br>    hook_dlopen(dlopen, &quot;libaes.so&quot;, set_read_write_break);<br>    hook_dlopen(android_dlopen_ext, &quot;libaes.so&quot;, set_read_write_break);<br><br>    function set_read_write_break()&#123;<br>        //实现一个异常回调   处理好这个异常就可以正常返回<br>        Process.setExceptionHandler(function(details) &#123;<br>            console.log(JSON.stringify(details, null, 2));<br>            console.log(&quot;lr&quot;, DebugSymbol.fromAddress(details.context.lr));<br>            console.log(&quot;pc&quot;, DebugSymbol.fromAddress(details.context.pc));<br>            Memory.protect(details.memory.address, Process.pointerSize, &#x27;rwx&#x27;);<br>            console.log(Thread.backtrace(details.context, Backtracer.ACCURATE).map(DebugSymbol.fromAddress).join(&#x27;\n&#x27;) + &#x27;\n&#x27;);<br>            return true;<br>        &#125;);<br>        var addr = Module.findBaseAddress(&quot;libaes.so&quot;).add(0x6666);<br>        Memory.protect(addr, 8, &#x27;---&#x27;); //修改内存页的权限<br>        /**<br>         * 比如有一个地址是0x12345678  我想看一下是那个代码去访问了这个地址<br>         * 我只需要把这个内存地址置空 有函数去访问这个地址时 就会触发非法访问异常<br>         * 比较鸡肋这种方法 这种方法会一次修改一个内存页  并且触发一次就无效了<br>         */<br>    &#125;<br>&#125;<br></code></pre></td></tr></table></figure>
 
-<h2 id="hook原理"><a href="#hook原理" class="headerlink" title="hook原理"></a>hook原理</h2><figure class="highlight oxygene"><table><tr><td class="gutter"><pre><span class="line">1</span><br><span class="line">2</span><br><span class="line">3</span><br><span class="line">4</span><br><span class="line">5</span><br><span class="line">6</span><br><span class="line">7</span><br><span class="line">8</span><br><span class="line">9</span><br><span class="line">10</span><br><span class="line">11</span><br><span class="line">12</span><br><span class="line">13</span><br><span class="line">14</span><br><span class="line">15</span><br></pre></td><td class="code"><pre><code class="hljs oxygene"><span class="hljs-number">1</span>.注入进程<br>ptrace<br>dlopen<br><span class="hljs-number">2</span>.hook 目标函数<br><span class="hljs-number">2.1</span> Java Hook<br><span class="hljs-keyword">Static</span> Field Hook：静态成员hook<br><span class="hljs-keyword">Method</span> <span class="hljs-title function_">Hook</span>：函数<span class="hljs-title function_">hook</span><br>2.2 <span class="hljs-title function_">Native</span> <span class="hljs-title function_">So</span> <span class="hljs-title function_">Hook</span><br><span class="hljs-title function_">GOT</span> <span class="hljs-title function_">Hook</span>：全局偏移表<span class="hljs-title function_">hook</span><br><span class="hljs-title function_">SYM</span> <span class="hljs-title function_">Hook</span>：符号表<span class="hljs-title function_">hook</span><br><span class="hljs-title function_">Inline</span> <span class="hljs-title function_">Hook</span>：函数内联<span class="hljs-title function_">hook</span><br>执行自身代码<br>获取敏感信息<br>修改返回值<br><span class="hljs-title function_">etc</span>.<br></code></pre></td></tr></table></figure>
+<h2 id="hook原理"><a href="#hook原理" class="headerlink" title="hook原理"></a>hook原理</h2><figure class="highlight plaintext"><table><tr><td class="gutter"><pre><span class="line">1</span><br><span class="line">2</span><br><span class="line">3</span><br><span class="line">4</span><br><span class="line">5</span><br><span class="line">6</span><br><span class="line">7</span><br><span class="line">8</span><br><span class="line">9</span><br><span class="line">10</span><br><span class="line">11</span><br><span class="line">12</span><br><span class="line">13</span><br><span class="line">14</span><br><span class="line">15</span><br></pre></td><td class="code"><pre><code class="hljs plaintext">1.注入进程<br>ptrace<br>dlopen<br>2.hook 目标函数<br>2.1 Java Hook<br>Static Field Hook：静态成员hook<br>Method Hook：函数hook<br>2.2 Native So Hook<br>GOT Hook：全局偏移表hook<br>SYM Hook：符号表hook<br>Inline Hook：函数内联hook<br>执行自身代码<br>获取敏感信息<br>修改返回值<br>etc.<br></code></pre></td></tr></table></figure>
 <p>frida注入的主要思路就是找到目标进程,使用ptrace跟踪目标进程获取mmap，dlpoen，dlsym等函数库的便宜获取mmap在目标进程申请一段内存空间将在目标进程中找到存放[frida-agent-32&#x2F;64.so]的空间启动执行各种操作由agent去实现。<br>补充：frida注入之后会在远端进程分配一段内存将agent拷贝过去并在目标进程中执行代码，执行完成后会 detach 目标进程，这也是为什么在 frida 先连接上目标进程后还可以用gdb&#x2F;ida等调试器连接，而先gdb连接进程后 frida 就无法再次连上的原因(frida在注入时只会ptrace一下下注入完毕后就会结束ptrace所以ptrace占坑这种反调试使用spawn方式启动即可)。</p>
 <p>frida-agent 注入到目标进程并启动后会启动一个新进程与 host 进行通信，从而 host 可以给目标进行发送命令，比如执行代码，激活&#x2F;关闭 hook，同时也能接收到目标进程的执行返回以及异步事件信息等。</p>
 <h3 id="hook-java层"><a href="#hook-java层" class="headerlink" title="hook java层"></a>hook java层</h3><p>frida 的 hook 区分了 art 模式和 dalvik 模式。</p>
-<h4 id="dalvik-模式"><a href="#dalvik-模式" class="headerlink" title="dalvik 模式"></a>dalvik 模式</h4><p>把 java 函数变成 native 函数，然后修改入口信息为自定义函数信息。<br><img src="/.com//../../img/13.png" srcset="/img/loading.gif" lazyload alt="header"></p>
-<figure class="highlight reasonml"><table><tr><td class="gutter"><pre><span class="line">1</span><br><span class="line">2</span><br><span class="line">3</span><br><span class="line">4</span><br><span class="line">5</span><br><span class="line">6</span><br><span class="line">7</span><br><span class="line">8</span><br><span class="line">9</span><br><span class="line">10</span><br><span class="line">11</span><br><span class="line">12</span><br><span class="line">13</span><br><span class="line">14</span><br><span class="line">15</span><br><span class="line">16</span><br><span class="line">17</span><br><span class="line">18</span><br><span class="line">19</span><br><span class="line">20</span><br><span class="line">21</span><br><span class="line">22</span><br><span class="line">23</span><br><span class="line">24</span><br><span class="line">25</span><br><span class="line">26</span><br><span class="line">27</span><br><span class="line">28</span><br><span class="line">29</span><br><span class="line">30</span><br><span class="line">31</span><br><span class="line">32</span><br><span class="line">33</span><br><span class="line">34</span><br><span class="line">35</span><br><span class="line">36</span><br><span class="line">37</span><br><span class="line">38</span><br><span class="line">39</span><br><span class="line">40</span><br><span class="line">41</span><br><span class="line">42</span><br><span class="line">43</span><br><span class="line">44</span><br><span class="line">45</span><br><span class="line">46</span><br><span class="line">47</span><br><span class="line">48</span><br><span class="line">49</span><br><span class="line">50</span><br><span class="line">51</span><br><span class="line">52</span><br><span class="line">53</span><br><span class="line">54</span><br><span class="line">55</span><br><span class="line">56</span><br><span class="line">57</span><br><span class="line">58</span><br><span class="line">59</span><br><span class="line">60</span><br><span class="line">61</span><br><span class="line">62</span><br><span class="line">63</span><br><span class="line">64</span><br><span class="line">65</span><br><span class="line">66</span><br><span class="line">67</span><br><span class="line">68</span><br><span class="line">69</span><br><span class="line">70</span><br><span class="line">71</span><br><span class="line">72</span><br><span class="line">73</span><br><span class="line">74</span><br><span class="line">75</span><br><span class="line">76</span><br><span class="line">77</span><br><span class="line">78</span><br><span class="line">79</span><br><span class="line">80</span><br><span class="line">81</span><br><span class="line">82</span><br><span class="line">83</span><br><span class="line">84</span><br><span class="line">85</span><br><span class="line">86</span><br><span class="line">87</span><br><span class="line">88</span><br><span class="line">89</span><br></pre></td><td class="code"><pre><code class="hljs reasonml"><span class="hljs-keyword">struct</span> Method &#123;   <br>    ClassObject*    clazz;   <span class="hljs-comment">/* method所属的类 public、native等*/</span><br>    u4              accessFlags; <span class="hljs-comment">/* 访问标记 */</span><br>    u2             methodIndex; <span class="hljs-comment">//method索引</span><br>    <span class="hljs-comment">//三个size为边界值，对于native函数，这3个size均等于参数列表的size</span><br>    u2              registersSize;  <span class="hljs-comment">/* ins + locals */</span><br>    u2              outsSize;<br>    u2              insSize;<br>    const <span class="hljs-built_in">char</span>*     name;<span class="hljs-comment">//函数名称</span><br>    <span class="hljs-comment">/*</span><br><span class="hljs-comment">     * Method prototype descriptor string (return and argument types)</span><br><span class="hljs-comment">     */</span><br>    DexProto        prototype;<br>    <span class="hljs-comment">/* short-form method descriptor string */</span><br>    const <span class="hljs-built_in">char</span>*     shorty;<br>    <span class="hljs-comment">/*</span><br><span class="hljs-comment">     * The remaining items are not used for abstract or native methods.</span><br><span class="hljs-comment">     * (JNI is currently hijacking &quot;insns&quot; as a function pointer, set</span><br><span class="hljs-comment">     * after the first call.  For internal-native this stays null.)</span><br><span class="hljs-comment">     */</span><br>    <span class="hljs-comment">/* the actual code */</span><br>    const u2*       insns;          <span class="hljs-comment">/* instructions, in memory-mapped .dex */</span><br>    <span class="hljs-comment">/* cached JNI argument and return-type hints */</span><br>    <span class="hljs-built_in">int</span>             jniArgInfo;<br>    <span class="hljs-comment">/*</span><br><span class="hljs-comment">     * Native method ptr; could be actual function or a JNI bridge.  We</span><br><span class="hljs-comment">     * don&#x27;t currently discriminate between DalvikBridgeFunc and</span><br><span class="hljs-comment">     * DalvikNativeFunc; the former takes an argument superset (i.e. two</span><br><span class="hljs-comment">     * extra args) which will be ignored.  If necessary we can use</span><br><span class="hljs-comment">     * insns==NULL to detect JNI bridge vs. internal native.</span><br><span class="hljs-comment">     */</span><br>    DalvikBridgeFunc nativeFunc;<br>    <span class="hljs-comment">/*</span><br><span class="hljs-comment">     * Register map data, if available.  This will point into the DEX file</span><br><span class="hljs-comment">     * if the data was computed during pre-verification, or into the</span><br><span class="hljs-comment">     * linear alloc area if not.</span><br><span class="hljs-comment">     */</span><br>    const RegisterMap* registerMap;<br><br>&#125;;<br><br>…<br>…<br>…<br><br><span class="hljs-keyword">function</span> replaceDalvikImplementation (fn) &#123;<br>  <span class="hljs-keyword">if</span> (fn<span class="hljs-operator"> === </span>null<span class="hljs-operator"> &amp;&amp; </span>dalvikOriginalMethod<span class="hljs-operator"> === </span>null) &#123;<br>    return;<br>  &#125;<br><span class="hljs-comment">//备份原来的method,</span><br>  <span class="hljs-keyword">if</span> (dalvikOriginalMethod<span class="hljs-operator"> === </span>null) &#123;<br>    dalvikOriginalMethod = <span class="hljs-module-access"><span class="hljs-module"><span class="hljs-identifier">Memory</span>.</span></span>dup(methodId, DVM_METHOD_SIZE);<br>    dalvikTargetMethodId = <span class="hljs-module-access"><span class="hljs-module"><span class="hljs-identifier">Memory</span>.</span></span>dup(methodId, DVM_METHOD_SIZE);<br>  &#125;<br><br>  <span class="hljs-keyword">if</span> (fn !== null) &#123;<br>   <span class="hljs-comment">//自定的代码</span><br>    implementation = implement(f, fn);<br><br>    <span class="hljs-keyword">let</span> argsSize = argTypes.reduce((acc, t) =&gt; (acc + t.size), <span class="hljs-number">0</span>);<br>    <span class="hljs-keyword">if</span> (<span class="hljs-keyword">type</span><span class="hljs-operator"> === </span>INSTANCE_METHOD) &#123;<br>      argsSize++;<br>    &#125;<br>    <span class="hljs-comment">// 把method变成native函数</span><br>    <span class="hljs-comment">/*</span><br><span class="hljs-comment">     * make method native (with kAccNative)</span><br><span class="hljs-comment">     * insSize and registersSize are set to arguments size</span><br><span class="hljs-comment">     */</span><br>    const accessFlags = (<span class="hljs-module-access"><span class="hljs-module"><span class="hljs-identifier">Memory</span>.</span></span>read<span class="hljs-constructor">U32(<span class="hljs-params">methodId</span>.<span class="hljs-params">add</span>(DVM_METHOD_OFFSET_ACCESS_FLAGS)</span>) <span class="hljs-pattern-match">| k<span class="hljs-constructor">AccNative</span>) &gt;&gt;&gt; 0;</span><br><span class="hljs-pattern-match">    const registers<span class="hljs-constructor">Size</span> = args<span class="hljs-constructor">Size</span>;</span><br><span class="hljs-pattern-match">    const outs<span class="hljs-constructor">Size</span> = 0;</span><br><span class="hljs-pattern-match">    const ins<span class="hljs-constructor">Size</span> = args<span class="hljs-constructor">Size</span>;</span><br><span class="hljs-pattern-match"></span><br><span class="hljs-pattern-match">    <span class="hljs-constructor">Memory</span>.write<span class="hljs-constructor">U32(<span class="hljs-params">methodId</span>.<span class="hljs-params">add</span>(DVM_METHOD_OFFSET_ACCESS_FLAGS)</span>, access<span class="hljs-constructor">Flags</span>);</span><br><span class="hljs-pattern-match">    <span class="hljs-constructor">Memory</span>.write<span class="hljs-constructor">U16(<span class="hljs-params">methodId</span>.<span class="hljs-params">add</span>(DVM_METHOD_OFFSET_REGISTERS_SIZE)</span>, registers<span class="hljs-constructor">Size</span>);</span><br><span class="hljs-pattern-match">    <span class="hljs-constructor">Memory</span>.write<span class="hljs-constructor">U16(<span class="hljs-params">methodId</span>.<span class="hljs-params">add</span>(DVM_METHOD_OFFSET_OUTS_SIZE)</span>, outs<span class="hljs-constructor">Size</span>);</span><br><span class="hljs-pattern-match">    <span class="hljs-constructor">Memory</span>.write<span class="hljs-constructor">U16(<span class="hljs-params">methodId</span>.<span class="hljs-params">add</span>(DVM_METHOD_OFFSET_INS_SIZE)</span>, ins<span class="hljs-constructor">Size</span>);</span><br><span class="hljs-pattern-match">    <span class="hljs-constructor">Memory</span>.write<span class="hljs-constructor">U32(<span class="hljs-params">methodId</span>.<span class="hljs-params">add</span>(DVM_METHOD_OFFSET_JNI_ARG_INFO)</span>, compute<span class="hljs-constructor">DalvikJniArgInfo(<span class="hljs-params">methodId</span>)</span>);</span><br><span class="hljs-pattern-match">    <span class="hljs-operator">/</span><span class="hljs-operator">/</span>调用dvm<span class="hljs-constructor">UseJNIBridge</span>为这个<span class="hljs-constructor">Method</span>设置一个<span class="hljs-constructor">Bridge</span>,本质上是修改结构体中的native<span class="hljs-constructor">Func</span>为自定义的implementation函数</span><br><span class="hljs-pattern-match">    api.dvm<span class="hljs-constructor">UseJNIBridge(<span class="hljs-params">methodId</span>, <span class="hljs-params">implementation</span>)</span>;</span><br><span class="hljs-pattern-match"></span><br><span class="hljs-pattern-match">    patched<span class="hljs-constructor">Methods</span>.add(f);</span><br><span class="hljs-pattern-match">  &#125; <span class="hljs-keyword">else</span> &#123;</span><br><span class="hljs-pattern-match">    patched<span class="hljs-constructor">Methods</span>.delete(f);</span><br><span class="hljs-pattern-match"></span><br><span class="hljs-pattern-match">    <span class="hljs-constructor">Memory</span>.copy(<span class="hljs-keyword">method</span><span class="hljs-constructor">Id</span>, dalvik<span class="hljs-constructor">OriginalMethod</span>, <span class="hljs-constructor">DVM_METHOD_SIZE</span>);</span><br><span class="hljs-pattern-match">    implementation = null;</span><br><span class="hljs-pattern-match">  &#125;</span><br><span class="hljs-pattern-match">&#125;</span><br></code></pre></td></tr></table></figure>
+<h4 id="dalvik-模式"><a href="#dalvik-模式" class="headerlink" title="dalvik 模式"></a>dalvik 模式</h4><p>把 java 函数变成 native 函数，然后修改入口信息为自定义函数信息。<br><img src="/.com//../../img/13.png" alt="header"></p>
+<figure class="highlight plaintext"><table><tr><td class="gutter"><pre><span class="line">1</span><br><span class="line">2</span><br><span class="line">3</span><br><span class="line">4</span><br><span class="line">5</span><br><span class="line">6</span><br><span class="line">7</span><br><span class="line">8</span><br><span class="line">9</span><br><span class="line">10</span><br><span class="line">11</span><br><span class="line">12</span><br><span class="line">13</span><br><span class="line">14</span><br><span class="line">15</span><br><span class="line">16</span><br><span class="line">17</span><br><span class="line">18</span><br><span class="line">19</span><br><span class="line">20</span><br><span class="line">21</span><br><span class="line">22</span><br><span class="line">23</span><br><span class="line">24</span><br><span class="line">25</span><br><span class="line">26</span><br><span class="line">27</span><br><span class="line">28</span><br><span class="line">29</span><br><span class="line">30</span><br><span class="line">31</span><br><span class="line">32</span><br><span class="line">33</span><br><span class="line">34</span><br><span class="line">35</span><br><span class="line">36</span><br><span class="line">37</span><br><span class="line">38</span><br><span class="line">39</span><br><span class="line">40</span><br><span class="line">41</span><br><span class="line">42</span><br><span class="line">43</span><br><span class="line">44</span><br><span class="line">45</span><br><span class="line">46</span><br><span class="line">47</span><br><span class="line">48</span><br><span class="line">49</span><br><span class="line">50</span><br><span class="line">51</span><br><span class="line">52</span><br><span class="line">53</span><br><span class="line">54</span><br><span class="line">55</span><br><span class="line">56</span><br><span class="line">57</span><br><span class="line">58</span><br><span class="line">59</span><br><span class="line">60</span><br><span class="line">61</span><br><span class="line">62</span><br><span class="line">63</span><br><span class="line">64</span><br><span class="line">65</span><br><span class="line">66</span><br><span class="line">67</span><br><span class="line">68</span><br><span class="line">69</span><br><span class="line">70</span><br><span class="line">71</span><br><span class="line">72</span><br><span class="line">73</span><br><span class="line">74</span><br><span class="line">75</span><br><span class="line">76</span><br><span class="line">77</span><br><span class="line">78</span><br><span class="line">79</span><br><span class="line">80</span><br><span class="line">81</span><br><span class="line">82</span><br><span class="line">83</span><br><span class="line">84</span><br><span class="line">85</span><br><span class="line">86</span><br><span class="line">87</span><br><span class="line">88</span><br><span class="line">89</span><br></pre></td><td class="code"><pre><code class="hljs plaintext">struct Method &#123;   <br>    ClassObject*    clazz;   /* method所属的类 public、native等*/<br>    u4              accessFlags; /* 访问标记 */<br>    u2             methodIndex; //method索引<br>    //三个size为边界值，对于native函数，这3个size均等于参数列表的size<br>    u2              registersSize;  /* ins + locals */<br>    u2              outsSize;<br>    u2              insSize;<br>    const char*     name;//函数名称<br>    /*<br>     * Method prototype descriptor string (return and argument types)<br>     */<br>    DexProto        prototype;<br>    /* short-form method descriptor string */<br>    const char*     shorty;<br>    /*<br>     * The remaining items are not used for abstract or native methods.<br>     * (JNI is currently hijacking &quot;insns&quot; as a function pointer, set<br>     * after the first call.  For internal-native this stays null.)<br>     */<br>    /* the actual code */<br>    const u2*       insns;          /* instructions, in memory-mapped .dex */<br>    /* cached JNI argument and return-type hints */<br>    int             jniArgInfo;<br>    /*<br>     * Native method ptr; could be actual function or a JNI bridge.  We<br>     * don&#x27;t currently discriminate between DalvikBridgeFunc and<br>     * DalvikNativeFunc; the former takes an argument superset (i.e. two<br>     * extra args) which will be ignored.  If necessary we can use<br>     * insns==NULL to detect JNI bridge vs. internal native.<br>     */<br>    DalvikBridgeFunc nativeFunc;<br>    /*<br>     * Register map data, if available.  This will point into the DEX file<br>     * if the data was computed during pre-verification, or into the<br>     * linear alloc area if not.<br>     */<br>    const RegisterMap* registerMap;<br><br>&#125;;<br><br>…<br>…<br>…<br><br>function replaceDalvikImplementation (fn) &#123;<br>  if (fn === null &amp;&amp; dalvikOriginalMethod === null) &#123;<br>    return;<br>  &#125;<br>//备份原来的method,<br>  if (dalvikOriginalMethod === null) &#123;<br>    dalvikOriginalMethod = Memory.dup(methodId, DVM_METHOD_SIZE);<br>    dalvikTargetMethodId = Memory.dup(methodId, DVM_METHOD_SIZE);<br>  &#125;<br><br>  if (fn !== null) &#123;<br>   //自定的代码<br>    implementation = implement(f, fn);<br><br>    let argsSize = argTypes.reduce((acc, t) =&gt; (acc + t.size), 0);<br>    if (type === INSTANCE_METHOD) &#123;<br>      argsSize++;<br>    &#125;<br>    // 把method变成native函数<br>    /*<br>     * make method native (with kAccNative)<br>     * insSize and registersSize are set to arguments size<br>     */<br>    const accessFlags = (Memory.readU32(methodId.add(DVM_METHOD_OFFSET_ACCESS_FLAGS)) | kAccNative) &gt;&gt;&gt; 0;<br>    const registersSize = argsSize;<br>    const outsSize = 0;<br>    const insSize = argsSize;<br><br>    Memory.writeU32(methodId.add(DVM_METHOD_OFFSET_ACCESS_FLAGS), accessFlags);<br>    Memory.writeU16(methodId.add(DVM_METHOD_OFFSET_REGISTERS_SIZE), registersSize);<br>    Memory.writeU16(methodId.add(DVM_METHOD_OFFSET_OUTS_SIZE), outsSize);<br>    Memory.writeU16(methodId.add(DVM_METHOD_OFFSET_INS_SIZE), insSize);<br>    Memory.writeU32(methodId.add(DVM_METHOD_OFFSET_JNI_ARG_INFO), computeDalvikJniArgInfo(methodId));<br>    //调用dvmUseJNIBridge为这个Method设置一个Bridge,本质上是修改结构体中的nativeFunc为自定义的implementation函数<br>    api.dvmUseJNIBridge(methodId, implementation);<br><br>    patchedMethods.add(f);<br>  &#125; else &#123;<br>    patchedMethods.delete(f);<br><br>    Memory.copy(methodId, dalvikOriginalMethod, DVM_METHOD_SIZE);<br>    implementation = null;<br>  &#125;<br>&#125;<br></code></pre></td></tr></table></figure>
 <h4 id="art-模式"><a href="#art-模式" class="headerlink" title="art 模式"></a>art 模式</h4><p>art模式也是需要将java 函数变成 native 函数但是不同于dalvik，art下有两种解释器一种汇编解释器一种smali解释器</p>
-<figure class="highlight armasm"><table><tr><td class="gutter"><pre><span class="line">1</span><br><span class="line">2</span><br></pre></td><td class="code"><pre><code class="hljs armasm"><span class="hljs-symbol">quick</span> <span class="hljs-meta">code</span> 模式：执行 <span class="hljs-meta">arm</span> 汇编指令<br><span class="hljs-symbol">Interpreter</span> 模式：由解释器解释执行 Dalvik 字节码<br></code></pre></td></tr></table></figure>
+<figure class="highlight plaintext"><table><tr><td class="gutter"><pre><span class="line">1</span><br><span class="line">2</span><br></pre></td><td class="code"><pre><code class="hljs plaintext">quick code 模式：执行 arm 汇编指令<br>Interpreter 模式：由解释器解释执行 Dalvik 字节码<br></code></pre></td></tr></table></figure>
 
 <p>&#x2F;&#x2F;2022.7.17 寒冰大佬指出问题  安卓7.0 有三种解释器switch结构，goto跳转表，汇编</p>
-<figure class="highlight awk"><table><tr><td class="gutter"><pre><span class="line">1</span><br><span class="line">2</span><br><span class="line">3</span><br><span class="line">4</span><br><span class="line">5</span><br></pre></td><td class="code"><pre><code class="hljs awk">enum InterpreterImplKind &#123;<br>   kSwitchImplKind,        <span class="hljs-regexp">//</span> Switch-based interpreter implementation.<br>   kComputedGotoImplKind,  <span class="hljs-regexp">//</span> Computed-goto-based interpreter implementation.<br>   kMterpImplKind          <span class="hljs-regexp">//</span> Assembly interpreter<br> &#125;;<br></code></pre></td></tr></table></figure>
+<figure class="highlight plaintext"><table><tr><td class="gutter"><pre><span class="line">1</span><br><span class="line">2</span><br><span class="line">3</span><br><span class="line">4</span><br><span class="line">5</span><br></pre></td><td class="code"><pre><code class="hljs plaintext">enum InterpreterImplKind &#123;<br>   kSwitchImplKind,        // Switch-based interpreter implementation.<br>   kComputedGotoImplKind,  // Computed-goto-based interpreter implementation.<br>   kMterpImplKind          // Assembly interpreter<br> &#125;;<br></code></pre></td></tr></table></figure>
 
-<p><img src="/.com//../../img/14.png" srcset="/img/loading.gif" lazyload alt="header"><br>1.如果函数已经存在quick code, 则指向这个函数对应的 quick code的起始地址，而当quick code不存在时，它的值则会代表其他的意义。</p>
+<p><img src="/.com//../../img/14.png" alt="header"><br>1.如果函数已经存在quick code, 则指向这个函数对应的 quick code的起始地址，而当quick code不存在时，它的值则会代表其他的意义。</p>
 <p>2.当一个 java 函数不存在 quick code时，它的值是函数artQuickToInterpreterBridge 的地址，用以从 quick 模式切换到 Interpreter 模式来解释执行 java 函数代码。</p>
 <p>3.当一个 java native（JNI）函数不存在 quick code时，它的值是函数 art_quick_generic_jni_trampoline 的地址，用以执行没有quick code的 jni 函数。</p>
 <p>所以 frida 要将 java method 转为 native method，需要将ARTMethod 结构进行如下修改：</p>
-<figure class="highlight awk"><table><tr><td class="gutter"><pre><span class="line">1</span><br><span class="line">2</span><br><span class="line">3</span><br><span class="line">4</span><br><span class="line">5</span><br><span class="line">6</span><br><span class="line">7</span><br><span class="line">8</span><br><span class="line">9</span><br><span class="line">10</span><br></pre></td><td class="code"><pre><code class="hljs awk">patchMethod(methodId, &#123;<br>  <span class="hljs-regexp">//</span>jnicode入口entry_point_from_jni_改为自定义的代码<br>  <span class="hljs-string">&#x27;jniCode&#x27;</span>: implementation,<br>  <span class="hljs-regexp">//</span>修改为access_flags_为native<br>  <span class="hljs-string">&#x27;accessFlags&#x27;</span>: (Memory.readU32(methodId.add(artMethodOffset.accessFlags)) | kAccNative | kAccFastNative) &gt;&gt;&gt; <span class="hljs-number">0</span>,<br>  <span class="hljs-regexp">//</span>art_quick_generic_jni_trampoline函数的地址<br>  <span class="hljs-string">&#x27;quickCode&#x27;</span>: api.artQuickGenericJniTrampoline,<br>  <span class="hljs-regexp">//</span>artInterpreterToCompiledCodeBridge函数地址<br>  <span class="hljs-string">&#x27;interpreterCode&#x27;</span>: api.artInterpreterToCompiledCodeBridge<br>&#125;);<br></code></pre></td></tr></table></figure>
-
-
-<h1 id="参考文献"><a href="#参考文献" class="headerlink" title="参考文献"></a>参考文献</h1><figure class="highlight awk"><table><tr><td class="gutter"><pre><span class="line">1</span><br><span class="line">2</span><br><span class="line">3</span><br><span class="line">4</span><br><span class="line">5</span><br><span class="line">6</span><br></pre></td><td class="code"><pre><code class="hljs awk">https:<span class="hljs-regexp">//</span>evilpan.com<span class="hljs-regexp">/2022/</span><span class="hljs-number">04</span><span class="hljs-regexp">/05/</span>frida-internal/<br>https:<span class="hljs-regexp">//</span>blog.drov.com.cn<span class="hljs-regexp">/2021/</span><span class="hljs-number">04</span>/hook.html<br>https:<span class="hljs-regexp">//</span>bbs.pediy.com/thread-<span class="hljs-number">229215</span>.htm<br>https:<span class="hljs-regexp">//</span>frida.re<span class="hljs-regexp">/docs/</span>home/<br>https:<span class="hljs-regexp">//</span>www.youtube.com/watch?v=uc1mbN9EJKQ<br><br></code></pre></td></tr></table></figure>
-
-<h1 id="添加补充"><a href="#添加补充" class="headerlink" title="添加补充"></a>添加补充</h1><figure class="highlight awk"><table><tr><td class="gutter"><pre><span class="line">1</span><br><span class="line">2</span><br><span class="line">3</span><br><span class="line">4</span><br></pre></td><td class="code"><pre><code class="hljs awk"><span class="hljs-regexp">//</span> <span class="hljs-number">2022.7</span>.<span class="hljs-number">17</span><br>一个非常不错的项目 纯frida实现的smali追踪<br>trace smali代码一般都是通过修改art源码去强制解析执行然后记录执行的指令和寄存器的值 <br>https:<span class="hljs-regexp">//gi</span>thub.com<span class="hljs-regexp">/SeeFlowerX/</span>frida-smali-trace<br></code></pre></td></tr></table></figure>
-                
-              </div>
-            
-            <hr/>
-            <div>
-              <div class="post-metas my-3">
-  
-  
-</div>
-
-
-              
-  
-
-  <div class="license-box my-3">
-    <div class="license-title">
-      <div>Frida工作原理学习</div>
-      <div>http://example.com/2022/06/26/Frida工作原理学习/</div>
-    </div>
-    <div class="license-meta">
-      
-        <div class="license-meta-item">
-          <div>作者</div>
-          <div>听说你是小兔叽</div>
-        </div>
-      
-      
-        <div class="license-meta-item license-meta-date">
-          <div>发布于</div>
-          <div>2022年6月26日</div>
-        </div>
-      
-      
-        <div class="license-meta-item license-meta-date">
-          <div>更新于</div>
-          <div>2022年11月14日</div>
-        </div>
-      
-      
-        <div class="license-meta-item">
-          <div>许可协议</div>
-          <div>
-            
-              
-              
-                <a target="_blank" href="https://creativecommons.org/licenses/by-nc-sa/4.0/">
-                  <span class="hint--top hint--rounded" aria-label="BY - 署名">
-                    <i class="iconfont icon-by"></i>
-                  </span>
-                </a>
-              
-                <a target="_blank" href="https://creativecommons.org/licenses/by-nc-sa/4.0/">
-                  <span class="hint--top hint--rounded" aria-label="NC - 非商业性使用">
-                    <i class="iconfont icon-nc"></i>
-                  </span>
-                </a>
-              
-                <a target="_blank" href="https://creativecommons.org/licenses/by-nc-sa/4.0/">
-                  <span class="hint--top hint--rounded" aria-label="SA - 相同方式共享">
-                    <i class="iconfont icon-sa"></i>
-                  </span>
-                </a>
-              
-            
-          </div>
-        </div>
-      
-    </div>
-    <div class="license-icon iconfont"></div>
-  </div>
-
-
-
-              
-                <div class="post-prevnext my-3">
-                  <article class="post-prev col-6">
-                    
-                    
-                      <a href="/2022/06/27/ptrace%E7%9A%84%E5%90%84%E7%A7%8D%E6%93%8D%E4%BD%9C/" title="ptrace的各种操作">
-                        <i class="iconfont icon-arrowleft"></i>
-                        <span class="hidden-mobile">ptrace的各种操作</span>
-                        <span class="visible-mobile">上一篇</span>
-                      </a>
-                    
-                  </article>
-                  <article class="post-next col-6">
-                    
-                    
-                      <a href="/2022/06/10/%E8%AE%B0%E5%BD%95%E4%B8%80%E6%AC%A1%E7%BC%96%E8%AF%91%E5%86%85%E6%A0%B8%EF%BC%8C%E4%BF%AE%E6%94%B9%E5%86%85%E6%A0%B8%E6%BA%90%E7%A0%81%E7%9B%91%E6%8E%A7%E7%B3%BB%E7%BB%9F%E8%B0%83%E7%94%A8/" title="记录一次编译内核，修改内核源码监控系统调用">
-                        <span class="hidden-mobile">记录一次编译内核，修改内核源码监控系统调用</span>
-                        <span class="visible-mobile">下一篇</span>
-                        <i class="iconfont icon-arrowright"></i>
-                      </a>
-                    
-                  </article>
-                </div>
-              
-            </div>
-
-            
-  <article id="comments" lazyload>
-    
-
-  </article>
-
-
-          </article>
-        </div>
-      </div>
-    </div>
-
-    <div class="side-col d-none d-lg-block col-lg-2">
-      
-  <aside class="sidebar" style="margin-left: -1rem">
-    <div id="toc">
-  <p class="toc-header"><i class="iconfont icon-list"></i>&nbsp;目录</p>
-  <div class="toc-body" id="toc-body"></div>
-</div>
-
-
-
-  </aside>
-
-
-    </div>
-  </div>
-</div>
-
-
-
-
-
-  
-
-
-
-  
-
-
-
-  
-
-
-
-  
-
-
-
-  
-
-
-
-
-
-
-
-    
-
-    
-      <a id="scroll-top-button" aria-label="TOP" href="#" role="button">
-        <i class="iconfont icon-arrowup" aria-hidden="true"></i>
-      </a>
-    
-
-    
-      <div class="modal fade" id="modalSearch" tabindex="-1" role="dialog" aria-labelledby="ModalLabel"
-     aria-hidden="true">
-  <div class="modal-dialog modal-dialog-scrollable modal-lg" role="document">
-    <div class="modal-content">
-      <div class="modal-header text-center">
-        <h4 class="modal-title w-100 font-weight-bold">搜索</h4>
-        <button type="button" id="local-search-close" class="close" data-dismiss="modal" aria-label="Close">
-          <span aria-hidden="true">&times;</span>
-        </button>
-      </div>
-      <div class="modal-body mx-3">
-        <div class="md-form mb-5">
-          <input type="text" id="local-search-input" class="form-control validate">
-          <label data-error="x" data-success="v" for="local-search-input">关键词</label>
-        </div>
-        <div class="list-group" id="local-search-result"></div>
-      </div>
-    </div>
-  </div>
-</div>
-
-    
-
-    
-  </main>
-
-  <footer>
-    <div class="footer-inner">
-  
-    <div class="footer-content">
-       <a href="https://hexo.io" target="_blank" rel="nofollow noopener"><span>Hexo</span></a> <i class="iconfont icon-love"></i> <a href="https://github.com/fluid-dev/hexo-theme-fluid" target="_blank" rel="nofollow noopener"><span>Fluid</span></a> 
-    </div>
-  
-  
-  
-  
-</div>
-
-  </footer>
-
-  <!-- Scripts -->
-  
-  <script  src="https://lib.baomitu.com/nprogress/0.2.0/nprogress.min.js" ></script>
-  <link  rel="stylesheet" href="https://lib.baomitu.com/nprogress/0.2.0/nprogress.min.css" />
-
-  <script>
-    NProgress.configure({"showSpinner":false,"trickleSpeed":100})
-    NProgress.start()
-    window.addEventListener('load', function() {
-      NProgress.done();
-    })
-  </script>
-
-
-<script  src="https://lib.baomitu.com/jquery/3.6.0/jquery.min.js" ></script>
-<script  src="https://lib.baomitu.com/twitter-bootstrap/4.6.1/js/bootstrap.min.js" ></script>
-<script  src="/js/events.js" ></script>
-<script  src="/js/plugins.js" ></script>
-
-
-  <script  src="https://lib.baomitu.com/typed.js/2.0.12/typed.min.js" ></script>
-  <script>
-    (function (window, document) {
-      var typing = Fluid.plugins.typing;
-      var subtitle = document.getElementById('subtitle');
-      if (!subtitle || !typing) {
-        return;
-      }
-      var text = subtitle.getAttribute('data-typed-text');
-      
-        typing(text);
-      
-    })(window, document);
-  </script>
-
-
-
-
-  
-    <script  src="/js/img-lazyload.js" ></script>
-  
-
-
-
-
-  
-<script>
-  Fluid.utils.createScript('https://lib.baomitu.com/tocbot/4.18.2/tocbot.min.js', function() {
-    var toc = jQuery('#toc');
-    if (toc.length === 0 || !window.tocbot) { return; }
-    var boardCtn = jQuery('#board-ctn');
-    var boardTop = boardCtn.offset().top;
-
-    window.tocbot.init(Object.assign({
-      tocSelector     : '#toc-body',
-      contentSelector : '.markdown-body',
-      linkClass       : 'tocbot-link',
-      activeLinkClass : 'tocbot-active-link',
-      listClass       : 'tocbot-list',
-      isCollapsedClass: 'tocbot-is-collapsed',
-      collapsibleClass: 'tocbot-is-collapsible',
-      scrollSmooth    : true,
-      includeTitleTags: true,
-      headingsOffset  : -boardTop,
-    }, CONFIG.toc));
-    if (toc.find('.toc-list-item').length > 0) {
-      toc.css('visibility', 'visible');
-    }
-
-    Fluid.events.registerRefreshCallback(function() {
-      if ('tocbot' in window) {
-        tocbot.refresh();
-        var toc = jQuery('#toc');
-        if (toc.length === 0 || !tocbot) {
-          return;
-        }
-        if (toc.find('.toc-list-item').length > 0) {
-          toc.css('visibility', 'visible');
-        }
-      }
-    });
-  });
-</script>
-
-
-  <script src=https://lib.baomitu.com/clipboard.js/2.0.11/clipboard.min.js></script>
-
-  <script>Fluid.plugins.codeWidget();</script>
-
-
-  
-<script>
-  Fluid.utils.createScript('https://lib.baomitu.com/anchor-js/4.3.1/anchor.min.js', function() {
-    window.anchors.options = {
-      placement: CONFIG.anchorjs.placement,
-      visible  : CONFIG.anchorjs.visible
-    };
-    if (CONFIG.anchorjs.icon) {
-      window.anchors.options.icon = CONFIG.anchorjs.icon;
-    }
-    var el = (CONFIG.anchorjs.element || 'h1,h2,h3,h4,h5,h6').split(',');
-    var res = [];
-    for (var item of el) {
-      res.push('.markdown-body > ' + item.trim());
-    }
-    if (CONFIG.anchorjs.placement === 'left') {
-      window.anchors.options.class = 'anchorjs-link-left';
-    }
-    window.anchors.add(res.join(', '));
-
-    Fluid.events.registerRefreshCallback(function() {
-      if ('anchors' in window) {
-        anchors.removeAll();
-        var el = (CONFIG.anchorjs.element || 'h1,h2,h3,h4,h5,h6').split(',');
-        var res = [];
-        for (var item of el) {
-          res.push('.markdown-body > ' + item.trim());
-        }
-        if (CONFIG.anchorjs.placement === 'left') {
-          anchors.options.class = 'anchorjs-link-left';
-        }
-        anchors.add(res.join(', '));
-      }
-    });
-  });
-</script>
-
-
-  
-<script>
-  Fluid.utils.createScript('https://lib.baomitu.com/fancybox/3.5.7/jquery.fancybox.min.js', function() {
-    Fluid.plugins.fancyBox();
-  });
-</script>
-
-
-  <script>Fluid.plugins.imageCaption();</script>
-
-  <script  src="/js/local-search.js" ></script>
-
-
-
-
-
-<!-- 主题的启动项，将它保持在最底部 -->
-<!-- the boot of the theme, keep it at the bottom -->
-<script  src="/js/boot.js" ></script>
-
-
-  
-
-  <noscript>
-    <div class="noscript-warning">博客在允许 JavaScript 运行的环境下浏览效果更佳</div>
-  </noscript>
-</body>
-</html>
+<figure class="highlight plaintext"><table><tr><td class="gutter"><pre><span class="line">1</span><br><span class="line">2</span><br><span class="line">3</span><br><span class="line">4</span><br><span class="line">5</span><br><span class="line">6</span><br><span class="line">7</span><br><span class="line">8</span><br><span class="line">9</span><br><span class="line">10</span><br></pre></td><td class="code"><pre><code class="hljs plaintext">patchMethod(methodId, &#123;<br>  //jnicode入口entry_point_from_jni_改为自定义的代码<br>  &#x27;jniCode&#x27;: implementation,<br>  //修改为access_flags_为native<br>  &#x27;accessFlags&#x27;: (Memory.readU32(methodId.add(artMethodOffset.accessFlags)) | kAccNative | kAccFastNative) &gt;&gt;&gt; 0,<br>  //art_quick_generic_jni_trampoline函数的地址<br>  &#x27;quickCode&#x27;: api.artQuickGenericJniTrampoline,<br>  //artInterpreterToCompiledCodeBridge函数地址<br>  &#x27;interpreterCode&#x27;: api.artInterpreterToCompiledCodeBridge<br>&#125;);<br></code></pre></td></tr></table></figure>
+
+
+<h1 id="参考文献"><a href="#参考文献" class="headerlink" title="参考文献"></a>参考文献</h1><figure class="highlight plaintext"><table><tr><td class="gutter"><pre><span class="line">1</span><br><span class="line">2</span><br><span class="line">3</span><br><span class="line">4</span><br><span class="line">5</span><br><span class="line">6</span><br></pre></td><td class="code"><pre><code class="hljs plaintext">https://evilpan.com/2022/04/05/frida-internal/<br>https://blog.drov.com.cn/2021/04/hook.html<br>https://bbs.pediy.com/thread-229215.htm<br>https://frida.re/docs/home/<br>https://www.youtube.com/watch?v=uc1mbN9EJKQ<br><br></code></pre></td></tr></table></figure>
+
+<h1 id="添加补充"><a href="#添加补充" class="headerlink" title="添加补充"></a>添加补充</h1><figure class="highlight plaintext"><table><tr><td class="gutter"><pre><span class="line">1</span><br><span class="line">2</span><br><span class="line">3</span><br><span class="line">4</span><br></pre></td><td class="code"><pre><code class="hljs plaintext">// 2022.7.17<br>一个非常不错的项目 纯frida实现的smali追踪<br>trace smali代码一般都是通过修改art源码去强制解析执行然后记录执行的指令和寄存器的值 <br>https://github.com/SeeFlowerX/frida-smali-trace<br></code></pre></td></tr></table></figure></article><div class="post-copyright"><div class="post-copyright__author"><span class="post-copyright-meta">文章作者: </span><span class="post-copyright-info"><a href="http://example.com">听说你是小兔叽</a></span></div><div class="post-copyright__type"><span class="post-copyright-meta">文章链接: </span><span class="post-copyright-info"><a href="http://example.com/2022/06/26/Frida%E5%B7%A5%E4%BD%9C%E5%8E%9F%E7%90%86%E5%AD%A6%E4%B9%A0/">http://example.com/2022/06/26/Frida%E5%B7%A5%E4%BD%9C%E5%8E%9F%E7%90%86%E5%AD%A6%E4%B9%A0/</a></span></div><div class="post-copyright__notice"><span class="post-copyright-meta">版权声明: </span><span class="post-copyright-info">本博客所有文章除特别声明外，均采用 <a href="https://creativecommons.org/licenses/by-nc-sa/4.0/" target="_blank">CC BY-NC-SA 4.0</a> 许可协议。转载请注明来自 <a href="http://example.com" target="_blank">听说你是小兔叽的博客</a>！</span></div></div><div class="tag_share"><div class="post-meta__tag-list"><a class="post-meta__tags" href="/tags/frida/">frida</a></div><div class="post_share"><div class="social-share" data-image="/img/5522.png" data-sites="facebook,twitter,wechat,weibo,qq"></div><link rel="stylesheet" href="https://cdn.jsdelivr.net/npm/butterfly-extsrc/sharejs/dist/css/share.min.css" media="print" onload="this.media='all'"><script src="https://cdn.jsdelivr.net/npm/butterfly-extsrc/sharejs/dist/js/social-share.min.js" defer></script></div></div><nav class="pagination-post" id="pagination"><div class="prev-post pull-left"><a href="/2022/06/27/ptrace%E7%9A%84%E5%90%84%E7%A7%8D%E6%93%8D%E4%BD%9C/"><img class="prev-cover" src="/img/5518.png" onerror="onerror=null;src='/img/404.jpg'" alt="cover of previous post"><div class="pagination-info"><div class="label">上一篇</div><div class="prev_info">ptrace的各种操作</div></div></a></div><div class="next-post pull-right"><a href="/2022/06/10/%E8%AE%B0%E5%BD%95%E4%B8%80%E6%AC%A1%E7%BC%96%E8%AF%91%E5%86%85%E6%A0%B8%EF%BC%8C%E4%BF%AE%E6%94%B9%E5%86%85%E6%A0%B8%E6%BA%90%E7%A0%81%E7%9B%91%E6%8E%A7%E7%B3%BB%E7%BB%9F%E8%B0%83%E7%94%A8/"><img class="next-cover" src="/img/5527.png" onerror="onerror=null;src='/img/404.jpg'" alt="cover of next post"><div class="pagination-info"><div class="label">下一篇</div><div class="next_info">记录一次编译内核，修改内核源码监控系统调用</div></div></a></div></nav><div class="relatedPosts"><div class="headline"><i class="fas fa-thumbs-up fa-fw"></i><span>相关推荐</span></div><div class="relatedPosts-list"><div><a href="/2022/11/15/frida%E7%BC%96%E8%AF%91%E8%BF%87%E6%A3%80%E6%B5%8B/" title="frida编译过检测"><img class="cover" src="/img/5520.png" alt="cover"><div class="content is-center"><div class="date"><i class="far fa-calendar-alt fa-fw"></i> 2022-11-15</div><div class="title">frida编译过检测</div></div></a></div><div><a href="/2022/11/29/frida%E5%B8%B8%E7%94%A8%E4%BB%A3%E7%A0%81/" title="frida常用代码"><img class="cover" src="/img/5521.png" alt="cover"><div class="content is-center"><div class="date"><i class="far fa-calendar-alt fa-fw"></i> 2022-11-29</div><div class="title">frida常用代码</div></div></a></div></div></div><hr/><div id="post-comment"><div class="comment-head"><div class="comment-headline"><i class="fas fa-comments fa-fw"></i><span> 评论</span></div></div><div class="comment-wrap"><div><div class="vcomment" id="vcomment"></div></div></div></div></div><div class="aside-content" id="aside-content"><div class="sticky_layout"><div class="card-widget" id="card-toc"><div class="item-headline"><i class="fas fa-stream"></i><span>目录</span><span class="toc-percentage"></span></div><div class="toc-content"><ol class="toc"><li class="toc-item toc-level-1"><a class="toc-link" href="#frida%E4%BB%8B%E7%BB%8D"><span class="toc-number">1.</span> <span class="toc-text">frida介绍</span></a></li><li class="toc-item toc-level-1"><a class="toc-link" href="#frida%E7%9A%84%E4%BB%A3%E7%A0%81%E7%BB%93%E6%9E%84"><span class="toc-number">2.</span> <span class="toc-text">frida的代码结构</span></a><ol class="toc-child"><li class="toc-item toc-level-2"><a class="toc-link" href="#frida-core"><span class="toc-number">2.1.</span> <span class="toc-text">frida-core</span></a></li><li class="toc-item toc-level-2"><a class="toc-link" href="#frida-gum"><span class="toc-number">2.2.</span> <span class="toc-text">frida-gum</span></a><ol class="toc-child"><li class="toc-item toc-level-3"><a class="toc-link" href="#Interceptor"><span class="toc-number">2.2.1.</span> <span class="toc-text">Interceptor</span></a></li><li class="toc-item toc-level-3"><a class="toc-link" href="#Stalker"><span class="toc-number">2.2.2.</span> <span class="toc-text">Stalker</span></a></li><li class="toc-item toc-level-3"><a class="toc-link" href="#%E5%86%85%E5%AD%98%E7%9B%91%E6%8E%A7"><span class="toc-number">2.2.3.</span> <span class="toc-text">内存监控</span></a></li></ol></li><li class="toc-item toc-level-2"><a class="toc-link" href="#hook%E5%8E%9F%E7%90%86"><span class="toc-number">2.3.</span> <span class="toc-text">hook原理</span></a><ol class="toc-child"><li class="toc-item toc-level-3"><a class="toc-link" href="#hook-java%E5%B1%82"><span class="toc-number">2.3.1.</span> <span class="toc-text">hook java层</span></a><ol class="toc-child"><li class="toc-item toc-level-4"><a class="toc-link" href="#dalvik-%E6%A8%A1%E5%BC%8F"><span class="toc-number">2.3.1.1.</span> <span class="toc-text">dalvik 模式</span></a></li><li class="toc-item toc-level-4"><a class="toc-link" href="#art-%E6%A8%A1%E5%BC%8F"><span class="toc-number">2.3.1.2.</span> <span class="toc-text">art 模式</span></a></li></ol></li></ol></li></ol></li><li class="toc-item toc-level-1"><a class="toc-link" href="#%E5%8F%82%E8%80%83%E6%96%87%E7%8C%AE"><span class="toc-number">3.</span> <span class="toc-text">参考文献</span></a></li><li class="toc-item toc-level-1"><a class="toc-link" href="#%E6%B7%BB%E5%8A%A0%E8%A1%A5%E5%85%85"><span class="toc-number">4.</span> <span class="toc-text">添加补充</span></a></li></ol></div></div></div></div></main><footer id="footer"><div id="footer-wrap"><div class="copyright">&copy;2020 - 2022 By 听说你是小兔叽</div><div class="framework-info"><span>框架 </span><a target="_blank" rel="noopener" href="https://hexo.io">Hexo</a><span class="footer-separator">|</span><span>主题 </span><a target="_blank" rel="noopener" href="https://github.com/jerryc127/hexo-theme-butterfly">Butterfly</a></div></div></footer></div><div id="rightside"><div id="rightside-config-hide"><button id="readmode" type="button" title="阅读模式"><i class="fas fa-book-open"></i></button><button id="darkmode" type="button" title="浅色和深色模式转换"><i class="fas fa-adjust"></i></button><button id="hide-aside-btn" type="button" title="单栏和双栏切换"><i class="fas fa-arrows-alt-h"></i></button></div><div id="rightside-config-show"><button id="rightside_config" type="button" title="设置"><i class="fas fa-cog fa-spin"></i></button><button class="close" id="mobile-toc-button" type="button" title="目录"><i class="fas fa-list-ul"></i></button><a id="to_comment" href="#post-comment" title="直达评论"><i class="fas fa-comments"></i></a><button id="go-up" type="button" title="回到顶部"><i class="fas fa-arrow-up"></i></button></div></div><div id="local-search"><div class="search-dialog"><nav class="search-nav"><span class="search-dialog-title">搜索</span><span id="loading-status"></span><button class="search-close-button"><i class="fas fa-times"></i></button></nav><div class="is-center" id="loading-database"><i class="fas fa-spinner fa-pulse"></i><span>  数据库加载中</span></div><div class="search-wrap"><div id="local-search-input"><div class="local-search-box"><input class="local-search-box--input" placeholder="搜索文章" type="text"/></div></div><hr/><div id="local-search-results"></div></div></div><div id="search-mask"></div></div><div><script src="/js/utils.js"></script><script src="/js/main.js"></script><script src="https://cdn.jsdelivr.net/npm/@fancyapps/ui/dist/fancybox.umd.min.js"></script><script src="https://cdn.jsdelivr.net/npm/node-snackbar/dist/snackbar.min.js"></script><script src="/js/search/local-search.js"></script><div class="js-pjax"><script>function loadValine () {
+  function initValine () {
+    const valine = new Valine(Object.assign({
+      el: '#vcomment',
+      appId: '',
+      appKey: '',
+      avatar: 'monsterid',
+      serverURLs: '',
+      emojiMaps: "",
+      path: window.location.pathname,
+      visitor: false
+    }, null))
+  }
+
+  if (typeof Valine === 'function') initValine() 
+  else getScript('https://cdn.jsdelivr.net/npm/valine/dist/Valine.min.js').then(initValine)
+}
+
+if ('Valine' === 'Valine' || !false) {
+  if (false) btf.loadComment(document.getElementById('vcomment'),loadValine)
+  else setTimeout(loadValine, 0)
+} else {
+  function loadOtherComment () {
+    loadValine()
+  }
+}</script></div><canvas class="fireworks" mobile="false"></canvas><script src="https://cdn.jsdelivr.net/npm/butterfly-extsrc/dist/fireworks.min.js"></script><script src="https://cdn.jsdelivr.net/npm/butterfly-extsrc/dist/activate-power-mode.min.js"></script><script>POWERMODE.colorful = true;
+POWERMODE.shake = true;
+POWERMODE.mobile = false;
+document.body.addEventListener('input', POWERMODE);
+</script><script async data-pjax src="//busuanzi.ibruce.info/busuanzi/2.3/busuanzi.pure.mini.js"></script></div></body></html>

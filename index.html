@@ -1,670 +1,207 @@
-
-
-<!DOCTYPE html>
-<html lang="zh-CN" data-default-color-scheme=auto>
-
-
-
-<head>
-  <meta charset="UTF-8">
-  <link rel="apple-touch-icon" sizes="76x76" href="/img/fluid.png">
-  <link rel="icon" href="/img/fluid.png">
-  <meta name="viewport" content="width=device-width, initial-scale=1.0, maximum-scale=5.0, shrink-to-fit=no">
-  <meta http-equiv="x-ua-compatible" content="ie=edge">
-  
-  <meta name="theme-color" content="#2f4154">
-  <meta name="author" content="听说你是小兔叽">
-  <meta name="keywords" content="">
-  
-    <meta property="og:type" content="website">
+<!DOCTYPE html><html lang="zh-CN" data-theme="light"><head><meta charset="UTF-8"><meta http-equiv="X-UA-Compatible" content="IE=edge"><meta name="viewport" content="width=device-width, initial-scale=1.0, maximum-scale=1.0, user-scalable=no"><title>听说你是小兔叽的博客</title><meta name="author" content="听说你是小兔叽"><meta name="copyright" content="听说你是小兔叽"><meta name="format-detection" content="telephone=no"><meta name="theme-color" content="#ffffff"><meta property="og:type" content="website">
 <meta property="og:title" content="听说你是小兔叽的博客">
 <meta property="og:url" content="http://example.com/index.html">
 <meta property="og:site_name" content="听说你是小兔叽的博客">
 <meta property="og:locale" content="zh_CN">
+<meta property="og:image" content="http://example.com/img/favicon.png">
 <meta property="article:author" content="听说你是小兔叽">
-<meta name="twitter:card" content="summary_large_image">
-  
-  
-  
-  <title>听说你是小兔叽的博客</title>
-
-  <link  rel="stylesheet" href="https://lib.baomitu.com/twitter-bootstrap/4.6.1/css/bootstrap.min.css" />
-
-
-
-
-
-<!-- 主题依赖的图标库，不要自行修改 -->
-<!-- Do not modify the link that theme dependent icons -->
-
-<link rel="stylesheet" href="//at.alicdn.com/t/font_1749284_hj8rtnfg7um.css">
-
-
-
-<link rel="stylesheet" href="//at.alicdn.com/t/font_1736178_lbnruvf0jn.css">
-
-
-<link  rel="stylesheet" href="/css/main.css" />
-
-
-  <link id="highlight-css" rel="stylesheet" href="/css/highlight.css" />
-  
-    <link id="highlight-css-dark" rel="stylesheet" href="/css/highlight-dark.css" />
-  
-
-
-
-
-  <script id="fluid-configs">
-    var Fluid = window.Fluid || {};
-    Fluid.ctx = Object.assign({}, Fluid.ctx)
-    var CONFIG = {"hostname":"example.com","root":"/","version":"1.9.3","typing":{"enable":true,"typeSpeed":70,"cursorChar":"_","loop":false,"scope":[]},"anchorjs":{"enable":true,"element":"h1,h2,h3,h4,h5,h6","placement":"left","visible":"hover","icon":""},"progressbar":{"enable":true,"height_px":3,"color":"#29d","options":{"showSpinner":false,"trickleSpeed":100}},"code_language":{"enable":true,"default":"TEXT"},"copy_btn":true,"image_caption":{"enable":true},"image_zoom":{"enable":true,"img_url_replace":["",""]},"toc":{"enable":true,"placement":"right","headingSelector":"h1,h2,h3,h4,h5,h6","collapseDepth":0},"lazyload":{"enable":true,"loading_img":"/img/loading.gif","onlypost":false,"offset_factor":2},"web_analytics":{"enable":false,"follow_dnt":true,"baidu":null,"google":null,"gtag":null,"tencent":{"sid":null,"cid":null},"woyaola":null,"cnzz":null,"leancloud":{"app_id":null,"app_key":null,"server_url":null,"path":"window.location.pathname","ignore_local":false}},"search_path":"/local-search.xml"};
-
-    if (CONFIG.web_analytics.follow_dnt) {
-      var dntVal = navigator.doNotTrack || window.doNotTrack || navigator.msDoNotTrack;
-      Fluid.ctx.dnt = dntVal && (dntVal.startsWith('1') || dntVal.startsWith('yes') || dntVal.startsWith('on'));
+<meta name="twitter:card" content="summary">
+<meta name="twitter:image" content="http://example.com/img/favicon.png"><link rel="shortcut icon" href="/img/favicon.png"><link rel="canonical" href="http://example.com/"><link rel="preconnect" href="//cdn.jsdelivr.net"/><link rel="preconnect" href="//busuanzi.ibruce.info"/><meta/><link rel="stylesheet" href="/css/index.css"><link rel="stylesheet" href="https://cdn.jsdelivr.net/npm/@fortawesome/fontawesome-free/css/all.min.css" media="print" onload="this.media='all'"><link rel="stylesheet" href="https://cdn.jsdelivr.net/npm/node-snackbar/dist/snackbar.min.css" media="print" onload="this.media='all'"><link rel="stylesheet" href="https://cdn.jsdelivr.net/npm/@fancyapps/ui/dist/fancybox.min.css" media="print" onload="this.media='all'"><script>const GLOBAL_CONFIG = { 
+  root: '/',
+  algolia: undefined,
+  localSearch: {"path":"/search.xml","preload":false,"languages":{"hits_empty":"找不到您查询的内容：${query}"}},
+  translate: undefined,
+  noticeOutdate: undefined,
+  highlight: {"plugin":"highlighjs","highlightCopy":true,"highlightLang":true,"highlightHeightLimit":false},
+  copy: {
+    success: '复制成功',
+    error: '复制错误',
+    noSupport: '浏览器不支持'
+  },
+  relativeDate: {
+    homepage: true,
+    post: false
+  },
+  runtime: '',
+  date_suffix: {
+    just: '刚刚',
+    min: '分钟前',
+    hour: '小时前',
+    day: '天前',
+    month: '个月前'
+  },
+  copyright: undefined,
+  lightbox: 'fancybox',
+  Snackbar: {"chs_to_cht":"你已切换为繁体","cht_to_chs":"你已切换为简体","day_to_night":"你已切换为深色模式","night_to_day":"你已切换为浅色模式","bgLight":"#49b1f5","bgDark":"#1f1f1f","position":"bottom-left"},
+  source: {
+    justifiedGallery: {
+      js: 'https://cdn.jsdelivr.net/npm/flickr-justified-gallery/dist/fjGallery.min.js',
+      css: 'https://cdn.jsdelivr.net/npm/flickr-justified-gallery/dist/fjGallery.min.css'
     }
-  </script>
-  <script  src="/js/utils.js" ></script>
-  <script  src="/js/color-schema.js" ></script>
-  
+  },
+  isPhotoFigcaption: false,
+  islazyload: false,
+  isAnchor: false
+}</script><script id="config-diff">var GLOBAL_CONFIG_SITE = {
+  title: '听说你是小兔叽的博客',
+  isPost: false,
+  isHome: true,
+  isHighlightShrink: false,
+  isToc: false,
+  postUpdate: '2022-11-30 21:48:04'
+}</script><noscript><style type="text/css">
+  #nav {
+    opacity: 1
+  }
+  .justified-gallery img {
+    opacity: 1
+  }
 
+  #recent-posts time,
+  #post-meta time {
+    display: inline !important
+  }
+</style></noscript><script>(win=>{
+    win.saveToLocal = {
+      set: function setWithExpiry(key, value, ttl) {
+        if (ttl === 0) return
+        const now = new Date()
+        const expiryDay = ttl * 86400000
+        const item = {
+          value: value,
+          expiry: now.getTime() + expiryDay,
+        }
+        localStorage.setItem(key, JSON.stringify(item))
+      },
 
-  
-<meta name="generator" content="Hexo 6.3.0"></head>
+      get: function getWithExpiry(key) {
+        const itemStr = localStorage.getItem(key)
 
+        if (!itemStr) {
+          return undefined
+        }
+        const item = JSON.parse(itemStr)
+        const now = new Date()
 
-<body>
-  
-
-  <header>
-    
-
-<div class="header-inner" style="height: 100vh;">
-  <nav id="navbar" class="navbar fixed-top  navbar-expand-lg navbar-dark scrolling-navbar">
-  <div class="container">
-    <a class="navbar-brand" href="/">
-      <strong>听说你是小兔叽 个人博客</strong>
-    </a>
-
-    <button id="navbar-toggler-btn" class="navbar-toggler" type="button" data-toggle="collapse"
-            data-target="#navbarSupportedContent"
-            aria-controls="navbarSupportedContent" aria-expanded="false" aria-label="Toggle navigation">
-      <div class="animated-icon"><span></span><span></span><span></span></div>
-    </button>
-
-    <!-- Collapsible content -->
-    <div class="collapse navbar-collapse" id="navbarSupportedContent">
-      <ul class="navbar-nav ml-auto text-center">
-        
-          
-          
-          
-          
-            <li class="nav-item">
-              <a class="nav-link" href="/">
-                <i class="iconfont icon-home-fill"></i>
-                首页
-              </a>
-            </li>
-          
-        
-          
-          
-          
-          
-            <li class="nav-item">
-              <a class="nav-link" href="/archives/">
-                <i class="iconfont icon-archive-fill"></i>
-                归档
-              </a>
-            </li>
-          
-        
-          
-          
-          
-          
-            <li class="nav-item">
-              <a class="nav-link" href="/categories/">
-                <i class="iconfont icon-category-fill"></i>
-                分类
-              </a>
-            </li>
-          
-        
-          
-          
-          
-          
-            <li class="nav-item">
-              <a class="nav-link" href="/tags/">
-                <i class="iconfont icon-tags-fill"></i>
-                标签
-              </a>
-            </li>
-          
-        
-          
-          
-          
-          
-            <li class="nav-item">
-              <a class="nav-link" href="/about/">
-                <i class="iconfont icon-user-fill"></i>
-                关于
-              </a>
-            </li>
-          
-        
-        
-          <li class="nav-item" id="search-btn">
-            <a class="nav-link" target="_self" href="javascript:;" data-toggle="modal" data-target="#modalSearch" aria-label="Search">
-              &nbsp;<i class="iconfont icon-search"></i>&nbsp;
-            </a>
-          </li>
-          
-        
-        
-          <li class="nav-item" id="color-toggle-btn">
-            <a class="nav-link" target="_self" href="javascript:;" aria-label="Color Toggle">&nbsp;<i
-                class="iconfont icon-dark" id="color-toggle-icon"></i>&nbsp;</a>
-          </li>
-        
-      </ul>
-    </div>
-  </div>
-</nav>
-
-  
-
-<div id="banner" class="banner" parallax=true
-     style="background: url('/img/default.png') no-repeat center center; background-size: cover;">
-  <div class="full-bg-img">
-    <div class="mask flex-center" style="background-color: rgba(0, 0, 0, 0.3)">
-      <div class="banner-text text-center fade-in-up">
-        <div class="h2">
-          
-            <span id="subtitle" data-typed-text="听说你是小兔叽 个人博客"></span>
-          
-        </div>
-
-        
-      </div>
-
-      
-        <div class="scroll-down-bar">
-          <i class="iconfont icon-arrowdown"></i>
-        </div>
-      
-    </div>
-  </div>
-</div>
-
-</div>
-
-  </header>
-
-  <main>
-    
-      <div class="container nopadding-x-md">
-        <div id="board"
-          style="margin-top: 0">
-          
-          <div class="container">
-            <div class="row">
-              <div class="col-12 col-md-10 m-auto">
-                
-
-
-  <div class="row mx-auto index-card">
-    
-    
-    <article class="col-12 col-md-12 mx-auto index-info">
-      <h1 class="index-header">
-        
-        <a href="/2022/11/29/frida%E5%B8%B8%E7%94%A8%E4%BB%A3%E7%A0%81/" target="_self">
-          frida常用代码
-        </a>
-      </h1>
-
-      
-      <a class="index-excerpt index-excerpt__noimg" href="/2022/11/29/frida%E5%B8%B8%E7%94%A8%E4%BB%A3%E7%A0%81/" target="_self">
-        <div>
-          JAVA常用代码普通函数hook 12345678910111213141516171819202122232425262728var use = Java.use(&quot;类名&quot;);var use = Java.use(&quot;类名&quot;);use.函数名.implementation = function (参数)&#123;    return 函数名(参数);&#1
-        </div>
-      </a>
-
-      <div class="index-btm post-metas">
-        
-          <div class="post-meta mr-3">
-            <i class="iconfont icon-date"></i>
-            <time datetime="2022-11-29 16:04" pubdate>
-              2022-11-29
-            </time>
-          </div>
-        
-        
-        
-      </div>
-    </article>
-  </div>
-
-  <div class="row mx-auto index-card">
-    
-    
-    <article class="col-12 col-md-12 mx-auto index-info">
-      <h1 class="index-header">
-        
-        <a href="/2022/11/15/frida%E7%BC%96%E8%AF%91%E8%BF%87%E6%A3%80%E6%B5%8B/" target="_self">
-          frida编译过检测
-        </a>
-      </h1>
-
-      
-      <a class="index-excerpt index-excerpt__noimg" href="/2022/11/15/frida%E7%BC%96%E8%AF%91%E8%BF%87%E6%A3%80%E6%B5%8B/" target="_self">
-        <div>
-          环境ubunt 22.04frida 16.04NDK 25r 构建确保你有：带有 GCC 7.5 或更新版本的现代 x86 系统PATH 上的开发工具链和 Node.js。例如在 Ubuntu 22.04 上： 12sudo apt-get install build-essential curl git lib32stdc++-9-dev \    libc6-dev-i386 nodejs
-        </div>
-      </a>
-
-      <div class="index-btm post-metas">
-        
-          <div class="post-meta mr-3">
-            <i class="iconfont icon-date"></i>
-            <time datetime="2022-11-15 19:15" pubdate>
-              2022-11-15
-            </time>
-          </div>
-        
-        
-        
-      </div>
-    </article>
-  </div>
-
-  <div class="row mx-auto index-card">
-    
-    
-    <article class="col-12 col-md-12 mx-auto index-info">
-      <h1 class="index-header">
-        
-        <a href="/2022/11/14/strace%E5%AE%9E%E7%8E%B0%E5%8E%9F%E7%90%86%EF%BC%9Aptrace%E7%B3%BB%E7%BB%9F%E8%B0%83%E7%94%A8/" target="_self">
-          strace实现原理：ptrace系统调用
-        </a>
-      </h1>
-
-      
-      <a class="index-excerpt index-excerpt__noimg" href="/2022/11/14/strace%E5%AE%9E%E7%8E%B0%E5%8E%9F%E7%90%86%EF%BC%9Aptrace%E7%B3%BB%E7%BB%9F%E8%B0%83%E7%94%A8/" target="_self">
-        <div>
-          什么是strace？根据strace官网的描述，strace是一个Linux用户空间跟踪器，可用于诊断、调试和教学。我们用它来监控用户空间进程和内核之间的交互，比如系统调用、信令、进程状态变化等等。 strace 使用内核的 ptrace 特性来实现其功能。 在运维的日常工作中，故障处理和问题诊断是主要内容和必备技能。strace 可以作为跟踪故障过程的有效工具。就像侦探通过系统调用的痕迹告诉你异
-        </div>
-      </a>
-
-      <div class="index-btm post-metas">
-        
-          <div class="post-meta mr-3">
-            <i class="iconfont icon-date"></i>
-            <time datetime="2022-11-14 21:48" pubdate>
-              2022-11-14
-            </time>
-          </div>
-        
-        
-        
-      </div>
-    </article>
-  </div>
-
-  <div class="row mx-auto index-card">
-    
-    
-    <article class="col-12 col-md-12 mx-auto index-info">
-      <h1 class="index-header">
-        
-        <a href="/2022/11/14/Android%E5%86%85%E5%AD%98%E8%AF%BB%E5%86%99%E6%96%AD%E7%82%B9-mprotect/" target="_self">
-          Android内存读写断点--mprotect
-        </a>
-      </h1>
-
-      
-      <a class="index-excerpt index-excerpt__noimg" href="/2022/11/14/Android%E5%86%85%E5%AD%98%E8%AF%BB%E5%86%99%E6%96%AD%E7%82%B9-mprotect/" target="_self">
-        <div>
-          这几天听朋友说 GG 可以在不加载驱动的情况下设置内存读写断点，类似 PC 上 ce 的 “查看谁访问了该内存” 功能。网上也查了下资料，发现其实不难. 简单来说，就是先注册一个异常处理函数，然后把内存属性设置为无法访问 (PROT_NONE), 然后当程序读取或改写这段内存后会触发异常，在异常处理函数里获取到 pc 寄存器的值后恢复内存属性即可.  注册异常处理函数123456789101112
-        </div>
-      </a>
-
-      <div class="index-btm post-metas">
-        
-          <div class="post-meta mr-3">
-            <i class="iconfont icon-date"></i>
-            <time datetime="2022-11-14 16:04" pubdate>
-              2022-11-14
-            </time>
-          </div>
-        
-        
-        
-      </div>
-    </article>
-  </div>
-
-  <div class="row mx-auto index-card">
-    
-    
-    <article class="col-12 col-md-12 mx-auto index-info">
-      <h1 class="index-header">
-        
-        <a href="/2022/11/14/Android%E5%86%85%E5%AD%98%E8%AF%BB%E5%86%99%E6%A3%80%E6%B5%8B/" target="_self">
-          Android内存读写检测
-        </a>
-      </h1>
-
-      
-      <a class="index-excerpt index-excerpt__noimg" href="/2022/11/14/Android%E5%86%85%E5%AD%98%E8%AF%BB%E5%86%99%E6%A3%80%E6%B5%8B/" target="_self">
-        <div>
-          mincore检测原理缺页异常比如我们调用 mmap 来映射内存，为了防止内存无效分配，该内存空间在未访问时是不会创建物理内存页的。当程序需要使用这块内存区域时，会触发缺页中断，然后系统才会创建物理内存页，就是先用 mmap 申请一段内存，如果 ce, 或 GG 读取这段内存后，那么这段内存就会由缺页变成非缺页，而内存的缺页与否可以通过调用 mincore 判断. 使用1.mmap 申请内存 12
-        </div>
-      </a>
-
-      <div class="index-btm post-metas">
-        
-          <div class="post-meta mr-3">
-            <i class="iconfont icon-date"></i>
-            <time datetime="2022-11-14 15:38" pubdate>
-              2022-11-14
-            </time>
-          </div>
-        
-        
-        
-      </div>
-    </article>
-  </div>
-
-  <div class="row mx-auto index-card">
-    
-    
-    <article class="col-12 col-md-12 mx-auto index-info">
-      <h1 class="index-header">
-        
-        <a href="/2022/11/14/Magisk%E6%B3%A8%E5%85%A5app%E5%B9%B6%E5%B5%8C%E5%85%A5imgui/" target="_self">
-          Magisk注入app并嵌入imgui
-        </a>
-      </h1>
-
-      
-      <a class="index-excerpt index-excerpt__noimg" href="/2022/11/14/Magisk%E6%B3%A8%E5%85%A5app%E5%B9%B6%E5%B5%8C%E5%85%A5imgui/" target="_self">
-        <div>
-          Android特殊绘制方框的方法 Android特殊绘制方框的方法需要关闭 selinux 并且要把 linker 和 libc 的路径分别改为 12/apex/com.android.runtime/bin/linker64/apex/com.android.runtime/lib64/bionic/libc.so  具体可以看这篇 github github 说回正题，既然 Surfacefl
-        </div>
-      </a>
-
-      <div class="index-btm post-metas">
-        
-          <div class="post-meta mr-3">
-            <i class="iconfont icon-date"></i>
-            <time datetime="2022-11-14 15:27" pubdate>
-              2022-11-14
-            </time>
-          </div>
-        
-        
-        
-      </div>
-    </article>
-  </div>
-
-  <div class="row mx-auto index-card">
-    
-    
-    <article class="col-12 col-md-12 mx-auto index-info">
-      <h1 class="index-header">
-        
-        <a href="/2022/06/27/ptrace%E7%9A%84%E5%90%84%E7%A7%8D%E6%93%8D%E4%BD%9C/" target="_self">
-          ptrace的各种操作
-        </a>
-      </h1>
-
-      
-      <a class="index-excerpt index-excerpt__noimg" href="/2022/06/27/ptrace%E7%9A%84%E5%90%84%E7%A7%8D%E6%93%8D%E4%BD%9C/" target="_self">
-        <div>
-          ptrace注入读取进程内存数据一、读取进程内存数据使用 ptrace 函数读取内存数据 :​ 12345//传入的第一个参数可以是 PTRACE_PEEKTEXT / PTRACE_PEEKDATA / PTRACE_PEEKUSER , 这三个参数效果相同 ;//传入的第二个参数是 进程号 PID , ptrace 函数可以同时调试多个进程 ;//传入的第三个参数是内存地址 , void* 指
-        </div>
-      </a>
-
-      <div class="index-btm post-metas">
-        
-          <div class="post-meta mr-3">
-            <i class="iconfont icon-date"></i>
-            <time datetime="2022-06-27 21:22" pubdate>
-              2022-06-27
-            </time>
-          </div>
-        
-        
-        
-      </div>
-    </article>
-  </div>
-
-  <div class="row mx-auto index-card">
-    
-    
-    <article class="col-12 col-md-12 mx-auto index-info">
-      <h1 class="index-header">
-        
-        <a href="/2022/06/26/Frida%E5%B7%A5%E4%BD%9C%E5%8E%9F%E7%90%86%E5%AD%A6%E4%B9%A0/" target="_self">
-          Frida工作原理学习
-        </a>
-      </h1>
-
-      
-      <a class="index-excerpt index-excerpt__noimg" href="/2022/06/26/Frida%E5%B7%A5%E4%BD%9C%E5%8E%9F%E7%90%86%E5%AD%A6%E4%B9%A0/" target="_self">
-        <div>
-          frida介绍frida是一款便携的,自由的,支持全平台的,hook框架，可以通过编写JavaScript,Python代码来和frida_server端进行交互,还记得当年用xposed时那种写了一大堆代码每次修改都要重新打包安装重启手机,那种调试调到头皮发麻的痛苦百分之30的时间都是在那里安装重启安装重启直到有一天遇到了小甜甜。 frida的代码结构123456789frida-core: F
-        </div>
-      </a>
-
-      <div class="index-btm post-metas">
-        
-          <div class="post-meta mr-3">
-            <i class="iconfont icon-date"></i>
-            <time datetime="2022-06-26 21:02" pubdate>
-              2022-06-26
-            </time>
-          </div>
-        
-        
-        
-      </div>
-    </article>
-  </div>
-
-  <div class="row mx-auto index-card">
-    
-    
-    <article class="col-12 col-md-12 mx-auto index-info">
-      <h1 class="index-header">
-        
-        <a href="/2022/06/10/%E8%AE%B0%E5%BD%95%E4%B8%80%E6%AC%A1%E7%BC%96%E8%AF%91%E5%86%85%E6%A0%B8%EF%BC%8C%E4%BF%AE%E6%94%B9%E5%86%85%E6%A0%B8%E6%BA%90%E7%A0%81%E7%9B%91%E6%8E%A7%E7%B3%BB%E7%BB%9F%E8%B0%83%E7%94%A8/" target="_self">
-          记录一次编译内核，修改内核源码监控系统调用
-        </a>
-      </h1>
-
-      
-      <a class="index-excerpt index-excerpt__noimg" href="/2022/06/10/%E8%AE%B0%E5%BD%95%E4%B8%80%E6%AC%A1%E7%BC%96%E8%AF%91%E5%86%85%E6%A0%B8%EF%BC%8C%E4%BF%AE%E6%94%B9%E5%86%85%E6%A0%B8%E6%BA%90%E7%A0%81%E7%9B%91%E6%8E%A7%E7%B3%BB%E7%BB%9F%E8%B0%83%E7%94%A8/" target="_self">
-        <div>
-          记录一次编译内核修改内核源码监控系统调用最近看了很多很好的贴子啊SVC的TraceHook沙箱的实现&amp;无痕Hook实现思路https://bbs.pediy.com/thread-273160.htmAndroid通用svc跟踪以及hook方案——Frida-Seccomphttps://bbs.pediy.com/thread-271815.htm又菜又想搞svc，就只能做最简单无脑的了
-        </div>
-      </a>
-
-      <div class="index-btm post-metas">
-        
-          <div class="post-meta mr-3">
-            <i class="iconfont icon-date"></i>
-            <time datetime="2022-06-10 20:50" pubdate>
-              2022-06-10
-            </time>
-          </div>
-        
-        
-        
-      </div>
-    </article>
-  </div>
-
-  <div class="row mx-auto index-card">
-    
-    
-    <article class="col-12 col-md-12 mx-auto index-info">
-      <h1 class="index-header">
-        
-        <a href="/2022/02/15/%E7%BC%96%E8%AF%91aosp-%E4%BF%AE%E6%94%B9%E6%BA%90%E7%A0%81%E5%AE%9A%E5%88%B6%E5%90%84%E7%A7%8D%E5%8A%9F%E8%83%BD/" target="_self">
-          记录编译aosp+修改源码
-        </a>
-      </h1>
-
-      
-      <a class="index-excerpt index-excerpt__noimg" href="/2022/02/15/%E7%BC%96%E8%AF%91aosp-%E4%BF%AE%E6%94%B9%E6%BA%90%E7%A0%81%E5%AE%9A%E5%88%B6%E5%90%84%E7%A7%8D%E5%8A%9F%E8%83%BD/" target="_self">
-        <div>
-          安卓系统编译前置知识aosp源码、对应的Linux内核、对应的手机驱动这里的对应指的是要跟aosp系统版本对应，要与手机型号对应推荐电脑配置 硬盘1t以上 内存 32g以上 android10 源码编译的下载1. 源码下载北方用清华镜像源    https://mirrors.tuna.tsinghua.edu.cn/help/AOSP/南方用中科大镜像源    http://mirrors.us
-        </div>
-      </a>
-
-      <div class="index-btm post-metas">
-        
-          <div class="post-meta mr-3">
-            <i class="iconfont icon-date"></i>
-            <time datetime="2022-02-15 14:31" pubdate>
-              2022-02-15
-            </time>
-          </div>
-        
-        
-        
-      </div>
-    </article>
-  </div>
-
-
-
-
-
-              </div>
-            </div>
-          </div>
-        </div>
-      </div>
-    
-
-    
-      <a id="scroll-top-button" aria-label="TOP" href="#" role="button">
-        <i class="iconfont icon-arrowup" aria-hidden="true"></i>
-      </a>
-    
-
-    
-      <div class="modal fade" id="modalSearch" tabindex="-1" role="dialog" aria-labelledby="ModalLabel"
-     aria-hidden="true">
-  <div class="modal-dialog modal-dialog-scrollable modal-lg" role="document">
-    <div class="modal-content">
-      <div class="modal-header text-center">
-        <h4 class="modal-title w-100 font-weight-bold">搜索</h4>
-        <button type="button" id="local-search-close" class="close" data-dismiss="modal" aria-label="Close">
-          <span aria-hidden="true">&times;</span>
-        </button>
-      </div>
-      <div class="modal-body mx-3">
-        <div class="md-form mb-5">
-          <input type="text" id="local-search-input" class="form-control validate">
-          <label data-error="x" data-success="v" for="local-search-input">关键词</label>
-        </div>
-        <div class="list-group" id="local-search-result"></div>
-      </div>
-    </div>
-  </div>
-</div>
-
-    
-
-    
-  </main>
-
-  <footer>
-    <div class="footer-inner">
-  
-    <div class="footer-content">
-       <a href="https://hexo.io" target="_blank" rel="nofollow noopener"><span>Hexo</span></a> <i class="iconfont icon-love"></i> <a href="https://github.com/fluid-dev/hexo-theme-fluid" target="_blank" rel="nofollow noopener"><span>Fluid</span></a> 
-    </div>
-  
-  
-  
-  
-</div>
-
-  </footer>
-
-  <!-- Scripts -->
-  
-  <script  src="https://lib.baomitu.com/nprogress/0.2.0/nprogress.min.js" ></script>
-  <link  rel="stylesheet" href="https://lib.baomitu.com/nprogress/0.2.0/nprogress.min.css" />
-
-  <script>
-    NProgress.configure({"showSpinner":false,"trickleSpeed":100})
-    NProgress.start()
-    window.addEventListener('load', function() {
-      NProgress.done();
-    })
-  </script>
-
-
-<script  src="https://lib.baomitu.com/jquery/3.6.0/jquery.min.js" ></script>
-<script  src="https://lib.baomitu.com/twitter-bootstrap/4.6.1/js/bootstrap.min.js" ></script>
-<script  src="/js/events.js" ></script>
-<script  src="/js/plugins.js" ></script>
-
-
-  <script  src="https://lib.baomitu.com/typed.js/2.0.12/typed.min.js" ></script>
-  <script>
-    (function (window, document) {
-      var typing = Fluid.plugins.typing;
-      var subtitle = document.getElementById('subtitle');
-      if (!subtitle || !typing) {
-        return;
+        if (now.getTime() > item.expiry) {
+          localStorage.removeItem(key)
+          return undefined
+        }
+        return item.value
       }
-      var text = subtitle.getAttribute('data-typed-text');
+    }
+  
+    win.getScript = url => new Promise((resolve, reject) => {
+      const script = document.createElement('script')
+      script.src = url
+      script.async = true
+      script.onerror = reject
+      script.onload = script.onreadystatechange = function() {
+        const loadState = this.readyState
+        if (loadState && loadState !== 'loaded' && loadState !== 'complete') return
+        script.onload = script.onreadystatechange = null
+        resolve()
+      }
+      document.head.appendChild(script)
+    })
+  
+      win.activateDarkMode = function () {
+        document.documentElement.setAttribute('data-theme', 'dark')
+        if (document.querySelector('meta[name="theme-color"]') !== null) {
+          document.querySelector('meta[name="theme-color"]').setAttribute('content', '#0d0d0d')
+        }
+      }
+      win.activateLightMode = function () {
+        document.documentElement.setAttribute('data-theme', 'light')
+        if (document.querySelector('meta[name="theme-color"]') !== null) {
+          document.querySelector('meta[name="theme-color"]').setAttribute('content', '#ffffff')
+        }
+      }
+      const t = saveToLocal.get('theme')
+    
+          if (t === 'dark') activateDarkMode()
+          else if (t === 'light') activateLightMode()
+        
+      const asideStatus = saveToLocal.get('aside-status')
+      if (asideStatus !== undefined) {
+        if (asideStatus === 'hide') {
+          document.documentElement.classList.add('hide-aside')
+        } else {
+          document.documentElement.classList.remove('hide-aside')
+        }
+      }
+    
+    const detectApple = () => {
+      if(/iPad|iPhone|iPod|Macintosh/.test(navigator.userAgent)){
+        document.documentElement.classList.add('apple')
+      }
+    }
+    detectApple()
+    })(window)</script><meta name="generator" content="Hexo 6.3.0"></head><body><div id="web_bg"></div><div id="sidebar"><div id="menu-mask"></div><div id="sidebar-menus"><div class="avatar-img is-center"><img src="/img/favicon.png" onerror="onerror=null;src='/img/friend_404.gif'" alt="avatar"/></div><div class="sidebar-site-data site-data is-center"><a href="/archives/"><div class="headline">文章</div><div class="length-num">10</div></a><a href="/tags/"><div class="headline">标签</div><div class="length-num">14</div></a><a href="/categories/"><div class="headline">分类</div><div class="length-num">0</div></a></div><hr/><div class="menus_items"><div class="menus_item"><a class="site-page" href="/"><i class="fa-fw fas fa-home"></i><span> Home</span></a></div><div class="menus_item"><a class="site-page" href="/archives/"><i class="fa-fw fas fa-archive"></i><span> Archives</span></a></div></div></div></div><div class="page" id="body-wrap"><header class="not-top-img" id="page-header"><nav id="nav"><span id="blog_name"><a id="site-name" href="/">听说你是小兔叽的博客</a></span><div id="menus"><div id="search-button"><a class="site-page social-icon search"><i class="fas fa-search fa-fw"></i><span> 搜索</span></a></div><div class="menus_items"><div class="menus_item"><a class="site-page" href="/"><i class="fa-fw fas fa-home"></i><span> Home</span></a></div><div class="menus_item"><a class="site-page" href="/archives/"><i class="fa-fw fas fa-archive"></i><span> Archives</span></a></div></div><div id="toggle-menu"><a class="site-page"><i class="fas fa-bars fa-fw"></i></a></div></div></nav></header><main class="layout" id="content-inner"><div class="recent-posts" id="recent-posts"><div class="recent-post-item"><div class="post_cover left"><a href="/2022/11/29/frida%E5%B8%B8%E7%94%A8%E4%BB%A3%E7%A0%81/" title="frida常用代码"><img class="post_bg" src="/img/5521.png" onerror="this.onerror=null;this.src='/img/404.jpg'" alt="frida常用代码"></a></div><div class="recent-post-info"><a class="article-title" href="/2022/11/29/frida%E5%B8%B8%E7%94%A8%E4%BB%A3%E7%A0%81/" title="frida常用代码">frida常用代码</a><div class="article-meta-wrap"><span class="post-meta-date"><i class="far fa-calendar-alt"></i><span class="article-meta-label">发表于</span><time class="post-meta-date-created" datetime="2022-11-29T08:04:21.000Z" title="发表于 2022-11-29 16:04:21">2022-11-29</time><span class="article-meta-separator">|</span><i class="fas fa-history"></i><span class="article-meta-label">更新于</span><time class="post-meta-date-updated" datetime="2022-11-30T13:23:57.979Z" title="更新于 2022-11-30 21:23:57">2022-11-30</time></span><span class="article-meta tags"><span class="article-meta-separator">|</span><i class="fas fa-tag"></i><a class="article-meta__tags" href="/tags/frida/">frida</a><span class="article-meta-link">•</span><a class="article-meta__tags" href="/tags/%E5%9F%BA%E7%A1%80/">基础</a></span><span class="article-meta"><span class="article-meta-separator">|</span><i class="fas fa-comments"></i><a href="/2022/11/29/frida%E5%B8%B8%E7%94%A8%E4%BB%A3%E7%A0%81/#post-comment"><span class="valine-comment-count" data-xid="/2022/11/29/frida%E5%B8%B8%E7%94%A8%E4%BB%A3%E7%A0%81/"><i class="fa-solid fa-spinner fa-spin"></i></span></a><span class="article-meta-label"> 条评论</span></span></div><div class="content">JAVA常用代码普通函数hook 12345678910111213141516171819202122232425262728var use = Java.use(&quot;类名&quot;);var use = Java.use(&quot;类名&quot;);use.函数名.implementation = function (参数)&#123;    return 函数名(参数);&#125;//$init代表构造函数use.$init.implementation = function (参数)&#123;    return this.$init(参数);&#125;//修改返回值var use = Java.use(&quot;类名&quot;);use.函数名.implementation = function (参数)&#123;    var result = 1;    return result;&#125;      //修改参数    use.函数名.implementation = function(i, str)&#123;    i = 1;     ...</div></div></div><div class="recent-post-item"><div class="post_cover right"><a href="/2022/11/15/frida%E7%BC%96%E8%AF%91%E8%BF%87%E6%A3%80%E6%B5%8B/" title="frida编译过检测"><img class="post_bg" src="/img/5520.png" onerror="this.onerror=null;this.src='/img/404.jpg'" alt="frida编译过检测"></a></div><div class="recent-post-info"><a class="article-title" href="/2022/11/15/frida%E7%BC%96%E8%AF%91%E8%BF%87%E6%A3%80%E6%B5%8B/" title="frida编译过检测">frida编译过检测</a><div class="article-meta-wrap"><span class="post-meta-date"><i class="far fa-calendar-alt"></i><span class="article-meta-label">发表于</span><time class="post-meta-date-created" datetime="2022-11-15T11:15:55.000Z" title="发表于 2022-11-15 19:15:55">2022-11-15</time><span class="article-meta-separator">|</span><i class="fas fa-history"></i><span class="article-meta-label">更新于</span><time class="post-meta-date-updated" datetime="2022-11-30T13:23:53.145Z" title="更新于 2022-11-30 21:23:53">2022-11-30</time></span><span class="article-meta tags"><span class="article-meta-separator">|</span><i class="fas fa-tag"></i><a class="article-meta__tags" href="/tags/frida/">frida</a><span class="article-meta-link">•</span><a class="article-meta__tags" href="/tags/%E7%BC%96%E8%AF%91/">编译</a><span class="article-meta-link">•</span><a class="article-meta__tags" href="/tags/%E5%8F%8D%E8%B0%83%E8%AF%95/">反调试</a></span><span class="article-meta"><span class="article-meta-separator">|</span><i class="fas fa-comments"></i><a href="/2022/11/15/frida%E7%BC%96%E8%AF%91%E8%BF%87%E6%A3%80%E6%B5%8B/#post-comment"><span class="valine-comment-count" data-xid="/2022/11/15/frida%E7%BC%96%E8%AF%91%E8%BF%87%E6%A3%80%E6%B5%8B/"><i class="fa-solid fa-spinner fa-spin"></i></span></a><span class="article-meta-label"> 条评论</span></span></div><div class="content">环境ubunt 22.04frida 16.04NDK 25r
+构建确保你有：带有 GCC 7.5 或更新版本的现代 x86 系统PATH 上的开发工具链和 Node.js。例如在 Ubuntu 22.04 上：
+12sudo apt-get install build-essential curl git lib32stdc++-9-dev \    libc6-dev-i386 nodejs npm python3-dev python3-pip
+12//这个是补丁引用python的一个模块 不安装编译成功启动server也会重启手机pip install lief 
+克隆frida并构建它：
+123git clone --recurse-submodules https://github.com/frida/frida.gitcd fridamake
+输入make会弹出所有可以构建的版本  编译完成的结果在 frida&#x2F;build&#x2F;编译的版本&#x2F;bin目录下
+魔改用葫芦娃大佬的那个补丁 执行必重启 我选择手动添加 https://github.com/ ...</div></div></div><div class="recent-post-item"><div class="post_cover left"><a href="/2022/11/14/strace%E5%AE%9E%E7%8E%B0%E5%8E%9F%E7%90%86%EF%BC%9Aptrace%E7%B3%BB%E7%BB%9F%E8%B0%83%E7%94%A8/" title="strace实现原理：ptrace系统调用"><img class="post_bg" src="/img/5525.png" onerror="this.onerror=null;this.src='/img/404.jpg'" alt="strace实现原理：ptrace系统调用"></a></div><div class="recent-post-info"><a class="article-title" href="/2022/11/14/strace%E5%AE%9E%E7%8E%B0%E5%8E%9F%E7%90%86%EF%BC%9Aptrace%E7%B3%BB%E7%BB%9F%E8%B0%83%E7%94%A8/" title="strace实现原理：ptrace系统调用">strace实现原理：ptrace系统调用</a><div class="article-meta-wrap"><span class="post-meta-date"><i class="far fa-calendar-alt"></i><span class="article-meta-label">发表于</span><time class="post-meta-date-created" datetime="2022-11-14T13:48:13.000Z" title="发表于 2022-11-14 21:48:13">2022-11-14</time><span class="article-meta-separator">|</span><i class="fas fa-history"></i><span class="article-meta-label">更新于</span><time class="post-meta-date-updated" datetime="2022-11-30T13:24:25.089Z" title="更新于 2022-11-30 21:24:25">2022-11-30</time></span><span class="article-meta tags"><span class="article-meta-separator">|</span><i class="fas fa-tag"></i><a class="article-meta__tags" href="/tags/trcae/">trcae</a></span><span class="article-meta"><span class="article-meta-separator">|</span><i class="fas fa-comments"></i><a href="/2022/11/14/strace%E5%AE%9E%E7%8E%B0%E5%8E%9F%E7%90%86%EF%BC%9Aptrace%E7%B3%BB%E7%BB%9F%E8%B0%83%E7%94%A8/#post-comment"><span class="valine-comment-count" data-xid="/2022/11/14/strace%E5%AE%9E%E7%8E%B0%E5%8E%9F%E7%90%86%EF%BC%9Aptrace%E7%B3%BB%E7%BB%9F%E8%B0%83%E7%94%A8/"><i class="fa-solid fa-spinner fa-spin"></i></span></a><span class="article-meta-label"> 条评论</span></span></div><div class="content">什么是strace？根据strace官网的描述，strace是一个Linux用户空间跟踪器，可用于诊断、调试和教学。我们用它来监控用户空间进程和内核之间的交互，比如系统调用、信令、进程状态变化等等。
+strace 使用内核的 ptrace 特性来实现其功能。
+在运维的日常工作中，故障处理和问题诊断是主要内容和必备技能。strace 可以作为跟踪故障过程的有效工具。就像侦探通过系统调用的痕迹告诉你异常的真相。
+这次想分享一个实用的东西，就是写一个strace工具。
+用过strace的同学都知道，strace是用来跟踪进程调用的系统调用的，还可以统计进程调用对系统调用的统计。strace有两种使用方式，如下：
+strace的过程strace -p 进程 pid第一个用于跟踪要执行的程序，而第二个用于跟踪正在运行的进程。
+下图是用 strace 跟踪 ls 命令的结果
+12345678910111213141516171819202122232425262728293031$ strace ls--- Process 15332 created--- Process 15332 loaded ...</div></div></div><div class="recent-post-item"><div class="post_cover right"><a href="/2022/11/14/Android%E5%86%85%E5%AD%98%E8%AF%BB%E5%86%99%E6%96%AD%E7%82%B9-mprotect/" title="Android内存读写断点--mprotect"><img class="post_bg" src="/img/5528.png" onerror="this.onerror=null;this.src='/img/404.jpg'" alt="Android内存读写断点--mprotect"></a></div><div class="recent-post-info"><a class="article-title" href="/2022/11/14/Android%E5%86%85%E5%AD%98%E8%AF%BB%E5%86%99%E6%96%AD%E7%82%B9-mprotect/" title="Android内存读写断点--mprotect">Android内存读写断点--mprotect</a><div class="article-meta-wrap"><span class="post-meta-date"><i class="far fa-calendar-alt"></i><span class="article-meta-label">发表于</span><time class="post-meta-date-created" datetime="2022-11-14T08:04:39.000Z" title="发表于 2022-11-14 16:04:39">2022-11-14</time><span class="article-meta-separator">|</span><i class="fas fa-history"></i><span class="article-meta-label">更新于</span><time class="post-meta-date-updated" datetime="2022-11-30T13:24:47.429Z" title="更新于 2022-11-30 21:24:47">2022-11-30</time></span><span class="article-meta tags"><span class="article-meta-separator">|</span><i class="fas fa-tag"></i><a class="article-meta__tags" href="/tags/%E5%86%85%E5%AD%98/">内存</a><span class="article-meta-link">•</span><a class="article-meta__tags" href="/tags/android/">android</a></span><span class="article-meta"><span class="article-meta-separator">|</span><i class="fas fa-comments"></i><a href="/2022/11/14/Android%E5%86%85%E5%AD%98%E8%AF%BB%E5%86%99%E6%96%AD%E7%82%B9-mprotect/#post-comment"><span class="valine-comment-count" data-xid="/2022/11/14/Android%E5%86%85%E5%AD%98%E8%AF%BB%E5%86%99%E6%96%AD%E7%82%B9-mprotect/"><i class="fa-solid fa-spinner fa-spin"></i></span></a><span class="article-meta-label"> 条评论</span></span></div><div class="content">这几天听朋友说 GG 可以在不加载驱动的情况下设置内存读写断点，类似 PC 上 ce 的 “查看谁访问了该内存” 功能。网上也查了下资料，发现其实不难.
+简单来说，就是先注册一个异常处理函数，然后把内存属性设置为无法访问 (PROT_NONE), 然后当程序读取或改写这段内存后会触发异常，在异常处理函数里获取到 pc 寄存器的值后恢复内存属性即可.
+
+注册异常处理函数123456789101112131415161718struct sigaction act ;memset(&amp;act ,0 ,sizeof(act));act.sa_sigaction = &amp;handler ; //异常处理函数act.sa_flags =SA_SIGINFO |SA_RESETHAND|SA_NODEFER;sigaction(SIGSEGV,&amp;act ,NULL); //注册异常处理函数,SIGSEGV表示读取或写入无效内存的错误类型void handler (int sig ,siginfo_t *siginfo , void * context)&#123;    //匹 ...</div></div></div><div class="recent-post-item"><div class="post_cover left"><a href="/2022/11/14/Android%E5%86%85%E5%AD%98%E8%AF%BB%E5%86%99%E6%A3%80%E6%B5%8B/" title="Android内存读写检测"><img class="post_bg" src="/img/5519.png" onerror="this.onerror=null;this.src='/img/404.jpg'" alt="Android内存读写检测"></a></div><div class="recent-post-info"><a class="article-title" href="/2022/11/14/Android%E5%86%85%E5%AD%98%E8%AF%BB%E5%86%99%E6%A3%80%E6%B5%8B/" title="Android内存读写检测">Android内存读写检测</a><div class="article-meta-wrap"><span class="post-meta-date"><i class="far fa-calendar-alt"></i><span class="article-meta-label">发表于</span><time class="post-meta-date-created" datetime="2022-11-14T07:38:49.000Z" title="发表于 2022-11-14 15:38:49">2022-11-14</time><span class="article-meta-separator">|</span><i class="fas fa-history"></i><span class="article-meta-label">更新于</span><time class="post-meta-date-updated" datetime="2022-11-30T13:23:47.241Z" title="更新于 2022-11-30 21:23:47">2022-11-30</time></span><span class="article-meta tags"><span class="article-meta-separator">|</span><i class="fas fa-tag"></i><a class="article-meta__tags" href="/tags/%E5%86%85%E5%AD%98/">内存</a><span class="article-meta-link">•</span><a class="article-meta__tags" href="/tags/%E6%A3%80%E6%B5%8B/">检测</a></span><span class="article-meta"><span class="article-meta-separator">|</span><i class="fas fa-comments"></i><a href="/2022/11/14/Android%E5%86%85%E5%AD%98%E8%AF%BB%E5%86%99%E6%A3%80%E6%B5%8B/#post-comment"><span class="valine-comment-count" data-xid="/2022/11/14/Android%E5%86%85%E5%AD%98%E8%AF%BB%E5%86%99%E6%A3%80%E6%B5%8B/"><i class="fa-solid fa-spinner fa-spin"></i></span></a><span class="article-meta-label"> 条评论</span></span></div><div class="content">mincore检测原理缺页异常比如我们调用 mmap 来映射内存，为了防止内存无效分配，该内存空间在未访问时是不会创建物理内存页的。当程序需要使用这块内存区域时，会触发缺页中断，然后系统才会创建物理内存页，就是先用 mmap 申请一段内存，如果 ce, 或 GG 读取这段内存后，那么这段内存就会由缺页变成非缺页，而内存的缺页与否可以通过调用 mincore 判断.
+使用1.mmap 申请内存
+12char * memory= nullptr;memory= (char*)mmap(nullptr,0x4000, PROT_READ | PROT_WRITE | PROT_EXEC, MAP_ANONYMOUS | MAP_PRIVATE, 0, 0);
+如果不对 memory 进行读写，那么 memory 默认为缺页状态
+2.mincore 判断
+123456789101112int pageSize = getpagesize();unsigned char vec = 0;//memory[0]=1; 这个操作会把memory改为非缺页状态unsigned long addr= r ...</div></div></div><div class="recent-post-item"><div class="post_cover right"><a href="/2022/11/14/Magisk%E6%B3%A8%E5%85%A5app%E5%B9%B6%E5%B5%8C%E5%85%A5imgui/" title="Magisk注入app并嵌入imgui"><img class="post_bg" src="/img/5516.png" onerror="this.onerror=null;this.src='/img/404.jpg'" alt="Magisk注入app并嵌入imgui"></a></div><div class="recent-post-info"><a class="article-title" href="/2022/11/14/Magisk%E6%B3%A8%E5%85%A5app%E5%B9%B6%E5%B5%8C%E5%85%A5imgui/" title="Magisk注入app并嵌入imgui">Magisk注入app并嵌入imgui</a><div class="article-meta-wrap"><span class="post-meta-date"><i class="far fa-calendar-alt"></i><span class="article-meta-label">发表于</span><time class="post-meta-date-created" datetime="2022-11-14T07:27:31.000Z" title="发表于 2022-11-14 15:27:31">2022-11-14</time><span class="article-meta-separator">|</span><i class="fas fa-history"></i><span class="article-meta-label">更新于</span><time class="post-meta-date-updated" datetime="2022-11-30T13:27:50.764Z" title="更新于 2022-11-30 21:27:50">2022-11-30</time></span><span class="article-meta tags"><span class="article-meta-separator">|</span><i class="fas fa-tag"></i><a class="article-meta__tags" href="/tags/%E6%B3%A8%E5%85%A5/">注入</a></span><span class="article-meta"><span class="article-meta-separator">|</span><i class="fas fa-comments"></i><a href="/2022/11/14/Magisk%E6%B3%A8%E5%85%A5app%E5%B9%B6%E5%B5%8C%E5%85%A5imgui/#post-comment"><span class="valine-comment-count" data-xid="/2022/11/14/Magisk%E6%B3%A8%E5%85%A5app%E5%B9%B6%E5%B5%8C%E5%85%A5imgui/"><i class="fa-solid fa-spinner fa-spin"></i></span></a><span class="article-meta-label"> 条评论</span></span></div><div class="content">Android特殊绘制方框的方法
+Android特殊绘制方框的方法需要关闭 selinux 并且要把 linker 和 libc 的路径分别改为
+12/apex/com.android.runtime/bin/linker64/apex/com.android.runtime/lib64/bionic/libc.so
+
+具体可以看这篇 github github
+说回正题，既然 Surfaceflinger 进程没有 eglSwapBuffers 函数，那么 eglSwapBuffers 肯定是在 app 内部调用的，直接 hook 了 app 内部 eglSwapBuffers 函数就行.
+123456789static void init_dobby()&#123;    void *sym_eglSwapBuffers = DobbySymbolResolver(NULL, &quot;eglSwapBuffers&quot;);    if (NULL != sym_eglSwapBuffers)    &#123;        LOGD(&quot;sym_eglSwapB ...</div></div></div><div class="recent-post-item"><div class="post_cover left"><a href="/2022/06/27/ptrace%E7%9A%84%E5%90%84%E7%A7%8D%E6%93%8D%E4%BD%9C/" title="ptrace的各种操作"><img class="post_bg" src="/img/5518.png" onerror="this.onerror=null;this.src='/img/404.jpg'" alt="ptrace的各种操作"></a></div><div class="recent-post-info"><a class="article-title" href="/2022/06/27/ptrace%E7%9A%84%E5%90%84%E7%A7%8D%E6%93%8D%E4%BD%9C/" title="ptrace的各种操作">ptrace的各种操作</a><div class="article-meta-wrap"><span class="post-meta-date"><i class="far fa-calendar-alt"></i><span class="article-meta-label">发表于</span><time class="post-meta-date-created" datetime="2022-06-27T13:22:30.000Z" title="发表于 2022-06-27 21:22:30">2022-06-27</time><span class="article-meta-separator">|</span><i class="fas fa-history"></i><span class="article-meta-label">更新于</span><time class="post-meta-date-updated" datetime="2022-11-30T13:30:16.187Z" title="更新于 2022-11-30 21:30:16">2022-11-30</time></span><span class="article-meta tags"><span class="article-meta-separator">|</span><i class="fas fa-tag"></i><a class="article-meta__tags" href="/tags/%E6%B3%A8%E5%85%A5/">注入</a><span class="article-meta-link">•</span><a class="article-meta__tags" href="/tags/ptrace/">ptrace</a><span class="article-meta-link">•</span><a class="article-meta__tags" href="/tags/syscall/">syscall</a><span class="article-meta-link">•</span><a class="article-meta__tags" href="/tags/svc/">svc</a></span><span class="article-meta"><span class="article-meta-separator">|</span><i class="fas fa-comments"></i><a href="/2022/06/27/ptrace%E7%9A%84%E5%90%84%E7%A7%8D%E6%93%8D%E4%BD%9C/#post-comment"><span class="valine-comment-count" data-xid="/2022/06/27/ptrace%E7%9A%84%E5%90%84%E7%A7%8D%E6%93%8D%E4%BD%9C/"><i class="fa-solid fa-spinner fa-spin"></i></span></a><span class="article-meta-label"> 条评论</span></span></div><div class="content">ptrace注入读取进程内存数据一、读取进程内存数据使用 ptrace 函数读取内存数据 :​
+12345//传入的第一个参数可以是 PTRACE_PEEKTEXT / PTRACE_PEEKDATA / PTRACE_PEEKUSER , 这三个参数效果相同 ;//传入的第二个参数是 进程号 PID , ptrace 函数可以同时调试多个进程 ;//传入的第三个参数是内存地址 , void* 指针类型的 ;//传入的第四个参数默认为 0 ;ptrace(PTRACE_PEEKTEXT, m_nPid, (void*)pRemoteAddr, 0);
+
+上述读取进程内存数据的 ptrace 方法的返回值是一个 4 字节数据 , 32 位的设备上 , 最长只能读取 4 字节 ; 可以在 for 循环中读取内存中的数据 ;
+
+二、读取流程读取进程内存数据时 , 每次最多只能读取 4 字节数据 , 先根据读取的大小 , 计算出读取次数 ,
+12// 每次读取 4 字节 , 读取次数为 nSize / 4  j = nSize / 4;
+然后再计算出最后不足 4 字节的部分 ,
+12// 读取 ...</div></div></div><div class="recent-post-item"><div class="post_cover right"><a href="/2022/06/26/Frida%E5%B7%A5%E4%BD%9C%E5%8E%9F%E7%90%86%E5%AD%A6%E4%B9%A0/" title="Frida工作原理学习"><img class="post_bg" src="/img/5522.png" onerror="this.onerror=null;this.src='/img/404.jpg'" alt="Frida工作原理学习"></a></div><div class="recent-post-info"><a class="article-title" href="/2022/06/26/Frida%E5%B7%A5%E4%BD%9C%E5%8E%9F%E7%90%86%E5%AD%A6%E4%B9%A0/" title="Frida工作原理学习">Frida工作原理学习</a><div class="article-meta-wrap"><span class="post-meta-date"><i class="far fa-calendar-alt"></i><span class="article-meta-label">发表于</span><time class="post-meta-date-created" datetime="2022-06-26T13:02:52.000Z" title="发表于 2022-06-26 21:02:52">2022-06-26</time><span class="article-meta-separator">|</span><i class="fas fa-history"></i><span class="article-meta-label">更新于</span><time class="post-meta-date-updated" datetime="2022-11-30T13:24:02.955Z" title="更新于 2022-11-30 21:24:02">2022-11-30</time></span><span class="article-meta tags"><span class="article-meta-separator">|</span><i class="fas fa-tag"></i><a class="article-meta__tags" href="/tags/frida/">frida</a></span><span class="article-meta"><span class="article-meta-separator">|</span><i class="fas fa-comments"></i><a href="/2022/06/26/Frida%E5%B7%A5%E4%BD%9C%E5%8E%9F%E7%90%86%E5%AD%A6%E4%B9%A0/#post-comment"><span class="valine-comment-count" data-xid="/2022/06/26/Frida%E5%B7%A5%E4%BD%9C%E5%8E%9F%E7%90%86%E5%AD%A6%E4%B9%A0/"><i class="fa-solid fa-spinner fa-spin"></i></span></a><span class="article-meta-label"> 条评论</span></span></div><div class="content">frida介绍frida是一款便携的,自由的,支持全平台的,hook框架，可以通过编写JavaScript,Python代码来和frida_server端进行交互,还记得当年用xposed时那种写了一大堆代码每次修改都要重新打包安装重启手机,那种调试调到头皮发麻的痛苦百分之30的时间都是在那里安装重启安装重启直到有一天遇到了小甜甜。
+frida的代码结构123456789frida-core: Frida 核心库frida-gum: inline-hook 框架bindings: frida-python: pythonfrida-node: Node.jsfrida-qml: Qmlfrida-swift: Swiftfrida-tools: CLI toolscapstone: instruction disammbler
+Frida的核心是c编写的有多种语言绑定例如 Node.js、 Python、 Swift、 .NET、 Qml一般我们都使用js去编写frida脚本因为js的异常处理机制非常棒相比于其他语言更高效好用。
+frida-corefrida-core的功能有进程注入 ...</div></div></div><div class="recent-post-item"><div class="post_cover left"><a href="/2022/06/10/%E8%AE%B0%E5%BD%95%E4%B8%80%E6%AC%A1%E7%BC%96%E8%AF%91%E5%86%85%E6%A0%B8%EF%BC%8C%E4%BF%AE%E6%94%B9%E5%86%85%E6%A0%B8%E6%BA%90%E7%A0%81%E7%9B%91%E6%8E%A7%E7%B3%BB%E7%BB%9F%E8%B0%83%E7%94%A8/" title="记录一次编译内核，修改内核源码监控系统调用"><img class="post_bg" src="/img/5527.png" onerror="this.onerror=null;this.src='/img/404.jpg'" alt="记录一次编译内核，修改内核源码监控系统调用"></a></div><div class="recent-post-info"><a class="article-title" href="/2022/06/10/%E8%AE%B0%E5%BD%95%E4%B8%80%E6%AC%A1%E7%BC%96%E8%AF%91%E5%86%85%E6%A0%B8%EF%BC%8C%E4%BF%AE%E6%94%B9%E5%86%85%E6%A0%B8%E6%BA%90%E7%A0%81%E7%9B%91%E6%8E%A7%E7%B3%BB%E7%BB%9F%E8%B0%83%E7%94%A8/" title="记录一次编译内核，修改内核源码监控系统调用">记录一次编译内核，修改内核源码监控系统调用</a><div class="article-meta-wrap"><span class="post-meta-date"><i class="far fa-calendar-alt"></i><span class="article-meta-label">发表于</span><time class="post-meta-date-created" datetime="2022-06-10T12:50:26.000Z" title="发表于 2022-06-10 20:50:26">2022-06-10</time><span class="article-meta-separator">|</span><i class="fas fa-history"></i><span class="article-meta-label">更新于</span><time class="post-meta-date-updated" datetime="2022-11-30T13:24:44.697Z" title="更新于 2022-11-30 21:24:44">2022-11-30</time></span><span class="article-meta tags"><span class="article-meta-separator">|</span><i class="fas fa-tag"></i><a class="article-meta__tags" href="/tags/%E7%BC%96%E8%AF%91/">编译</a><span class="article-meta-link">•</span><a class="article-meta__tags" href="/tags/syscall/">syscall</a><span class="article-meta-link">•</span><a class="article-meta__tags" href="/tags/%E5%86%85%E6%A0%B8/">内核</a></span><span class="article-meta"><span class="article-meta-separator">|</span><i class="fas fa-comments"></i><a href="/2022/06/10/%E8%AE%B0%E5%BD%95%E4%B8%80%E6%AC%A1%E7%BC%96%E8%AF%91%E5%86%85%E6%A0%B8%EF%BC%8C%E4%BF%AE%E6%94%B9%E5%86%85%E6%A0%B8%E6%BA%90%E7%A0%81%E7%9B%91%E6%8E%A7%E7%B3%BB%E7%BB%9F%E8%B0%83%E7%94%A8/#post-comment"><span class="valine-comment-count" data-xid="/2022/06/10/%E8%AE%B0%E5%BD%95%E4%B8%80%E6%AC%A1%E7%BC%96%E8%AF%91%E5%86%85%E6%A0%B8%EF%BC%8C%E4%BF%AE%E6%94%B9%E5%86%85%E6%A0%B8%E6%BA%90%E7%A0%81%E7%9B%91%E6%8E%A7%E7%B3%BB%E7%BB%9F%E8%B0%83%E7%94%A8/"><i class="fa-solid fa-spinner fa-spin"></i></span></a><span class="article-meta-label"> 条评论</span></span></div><div class="content">记录一次编译内核修改内核源码监控系统调用最近看了很多很好的贴子啊SVC的TraceHook沙箱的实现&amp;无痕Hook实现思路https://bbs.pediy.com/thread-273160.htmAndroid通用svc跟踪以及hook方案——Frida-Seccomphttps://bbs.pediy.com/thread-271815.htm又菜又想搞svc，就只能做最简单无脑的了  
+一，  给小白介绍一下什么是系统调用(syscall)简单的来说呢就是libc.so里面的一些系统函数比如read(),write()最简单的读写函数，这些函数实际上底层都是由syscall()交给linux内核去实现的他的第一个参数是系统调用号，后面的参数是根据调用的函数来写的现在用android studio开发的话使用系统调用和使用正常的函数一样也不需要去记这些系统调用号都有一个常量表可以很方便的去实现功能在调用syscall时通过会从用户态切换到内核态正常使用hook框架很难去hook到内核态下的代码 常规手段可以通过找到svc指令地址 在他调用svc之前去inlinehook他 ...</div></div></div><div class="recent-post-item"><div class="post_cover right"><a href="/2022/02/15/%E7%BC%96%E8%AF%91aosp-%E4%BF%AE%E6%94%B9%E6%BA%90%E7%A0%81%E5%AE%9A%E5%88%B6%E5%90%84%E7%A7%8D%E5%8A%9F%E8%83%BD/" title="记录编译aosp+修改源码"><img class="post_bg" src="/img/5526.png" onerror="this.onerror=null;this.src='/img/404.jpg'" alt="记录编译aosp+修改源码"></a></div><div class="recent-post-info"><a class="article-title" href="/2022/02/15/%E7%BC%96%E8%AF%91aosp-%E4%BF%AE%E6%94%B9%E6%BA%90%E7%A0%81%E5%AE%9A%E5%88%B6%E5%90%84%E7%A7%8D%E5%8A%9F%E8%83%BD/" title="记录编译aosp+修改源码">记录编译aosp+修改源码</a><div class="article-meta-wrap"><span class="post-meta-date"><i class="far fa-calendar-alt"></i><span class="article-meta-label">发表于</span><time class="post-meta-date-created" datetime="2022-02-15T06:31:38.000Z" title="发表于 2022-02-15 14:31:38">2022-02-15</time><span class="article-meta-separator">|</span><i class="fas fa-history"></i><span class="article-meta-label">更新于</span><time class="post-meta-date-updated" datetime="2022-11-30T13:24:41.532Z" title="更新于 2022-11-30 21:24:41">2022-11-30</time></span><span class="article-meta tags"><span class="article-meta-separator">|</span><i class="fas fa-tag"></i><a class="article-meta__tags" href="/tags/%E7%BC%96%E8%AF%91/">编译</a><span class="article-meta-link">•</span><a class="article-meta__tags" href="/tags/aosp/">aosp</a></span><span class="article-meta"><span class="article-meta-separator">|</span><i class="fas fa-comments"></i><a href="/2022/02/15/%E7%BC%96%E8%AF%91aosp-%E4%BF%AE%E6%94%B9%E6%BA%90%E7%A0%81%E5%AE%9A%E5%88%B6%E5%90%84%E7%A7%8D%E5%8A%9F%E8%83%BD/#post-comment"><span class="valine-comment-count" data-xid="/2022/02/15/%E7%BC%96%E8%AF%91aosp-%E4%BF%AE%E6%94%B9%E6%BA%90%E7%A0%81%E5%AE%9A%E5%88%B6%E5%90%84%E7%A7%8D%E5%8A%9F%E8%83%BD/"><i class="fa-solid fa-spinner fa-spin"></i></span></a><span class="article-meta-label"> 条评论</span></span></div><div class="content">安卓系统编译前置知识aosp源码、对应的Linux内核、对应的手机驱动这里的对应指的是要跟aosp系统版本对应，要与手机型号对应推荐电脑配置 硬盘1t以上 内存 32g以上
+android10 源码编译的下载1. 源码下载北方用清华镜像源    https://mirrors.tuna.tsinghua.edu.cn/help/AOSP/南方用中科大镜像源    http://mirrors.ustc.edu.cn/help/aosp.html
+3. 下载初始化包并解压123mkdir ~/bincd ~/binwget https://mirrors.tuna.tsinghua.edu.cn/aosp-monthly/aosp-20220222.tar
+wget可以使用-c选项，来支持断点下载
+12md5sum aosp-latest.tartar xvf aosp-latest.tar
+4. 配置git123sudo apt-get install gitgit config --global user.email 24358757@qq.comgit config --globa ...</div></div></div><nav id="pagination"><div class="pagination"><span class="page-number current">1</span></div></nav></div><div class="aside-content" id="aside-content"><div class="card-widget card-info"><div class="is-center"><div class="avatar-img"><img src="/img/favicon.png" onerror="this.onerror=null;this.src='/img/friend_404.gif'" alt="avatar"/></div><div class="author-info__name">听说你是小兔叽</div><div class="author-info__description">V+ RWY20161213</div></div><div class="card-info-data site-data is-center"><a href="/archives/"><div class="headline">文章</div><div class="length-num">10</div></a><a href="/tags/"><div class="headline">标签</div><div class="length-num">14</div></a><a href="/categories/"><div class="headline">分类</div><div class="length-num">0</div></a></div><a id="card-info-btn" target="_blank" rel="noopener" href="https://github.com/xiaotujinbnb"><i class="fab fa-github"></i><span>Follow Me</span></a></div><div class="card-widget card-announcement"><div class="item-headline"><i class="fas fa-bullhorn fa-shake"></i><span>公告</span></div><div class="announcement_content">听说你是小兔叽嘛的个人博客 大佬勿喷哇</div></div><div class="sticky_layout"><div class="card-widget card-recent-post"><div class="item-headline"><i class="fas fa-history"></i><span>最新文章</span></div><div class="aside-list"><div class="aside-list-item"><a class="thumbnail" href="/2022/11/29/frida%E5%B8%B8%E7%94%A8%E4%BB%A3%E7%A0%81/" title="frida常用代码"><img src="/img/5521.png" onerror="this.onerror=null;this.src='/img/404.jpg'" alt="frida常用代码"/></a><div class="content"><a class="title" href="/2022/11/29/frida%E5%B8%B8%E7%94%A8%E4%BB%A3%E7%A0%81/" title="frida常用代码">frida常用代码</a><time datetime="2022-11-29T08:04:21.000Z" title="发表于 2022-11-29 16:04:21">2022-11-29</time></div></div><div class="aside-list-item"><a class="thumbnail" href="/2022/11/15/frida%E7%BC%96%E8%AF%91%E8%BF%87%E6%A3%80%E6%B5%8B/" title="frida编译过检测"><img src="/img/5520.png" onerror="this.onerror=null;this.src='/img/404.jpg'" alt="frida编译过检测"/></a><div class="content"><a class="title" href="/2022/11/15/frida%E7%BC%96%E8%AF%91%E8%BF%87%E6%A3%80%E6%B5%8B/" title="frida编译过检测">frida编译过检测</a><time datetime="2022-11-15T11:15:55.000Z" title="发表于 2022-11-15 19:15:55">2022-11-15</time></div></div><div class="aside-list-item"><a class="thumbnail" href="/2022/11/14/strace%E5%AE%9E%E7%8E%B0%E5%8E%9F%E7%90%86%EF%BC%9Aptrace%E7%B3%BB%E7%BB%9F%E8%B0%83%E7%94%A8/" title="strace实现原理：ptrace系统调用"><img src="/img/5525.png" onerror="this.onerror=null;this.src='/img/404.jpg'" alt="strace实现原理：ptrace系统调用"/></a><div class="content"><a class="title" href="/2022/11/14/strace%E5%AE%9E%E7%8E%B0%E5%8E%9F%E7%90%86%EF%BC%9Aptrace%E7%B3%BB%E7%BB%9F%E8%B0%83%E7%94%A8/" title="strace实现原理：ptrace系统调用">strace实现原理：ptrace系统调用</a><time datetime="2022-11-14T13:48:13.000Z" title="发表于 2022-11-14 21:48:13">2022-11-14</time></div></div><div class="aside-list-item"><a class="thumbnail" href="/2022/11/14/Android%E5%86%85%E5%AD%98%E8%AF%BB%E5%86%99%E6%96%AD%E7%82%B9-mprotect/" title="Android内存读写断点--mprotect"><img src="/img/5528.png" onerror="this.onerror=null;this.src='/img/404.jpg'" alt="Android内存读写断点--mprotect"/></a><div class="content"><a class="title" href="/2022/11/14/Android%E5%86%85%E5%AD%98%E8%AF%BB%E5%86%99%E6%96%AD%E7%82%B9-mprotect/" title="Android内存读写断点--mprotect">Android内存读写断点--mprotect</a><time datetime="2022-11-14T08:04:39.000Z" title="发表于 2022-11-14 16:04:39">2022-11-14</time></div></div><div class="aside-list-item"><a class="thumbnail" href="/2022/11/14/Android%E5%86%85%E5%AD%98%E8%AF%BB%E5%86%99%E6%A3%80%E6%B5%8B/" title="Android内存读写检测"><img src="/img/5519.png" onerror="this.onerror=null;this.src='/img/404.jpg'" alt="Android内存读写检测"/></a><div class="content"><a class="title" href="/2022/11/14/Android%E5%86%85%E5%AD%98%E8%AF%BB%E5%86%99%E6%A3%80%E6%B5%8B/" title="Android内存读写检测">Android内存读写检测</a><time datetime="2022-11-14T07:38:49.000Z" title="发表于 2022-11-14 15:38:49">2022-11-14</time></div></div></div></div><div class="card-widget card-tags"><div class="item-headline"><i class="fas fa-tags"></i><span>标签</span></div><div class="card-tag-cloud"><a href="/tags/android/" style="font-size: 1.1em; color: #999">android</a> <a href="/tags/aosp/" style="font-size: 1.1em; color: #999">aosp</a> <a href="/tags/frida/" style="font-size: 1.5em; color: #99a9bf">frida</a> <a href="/tags/ptrace/" style="font-size: 1.1em; color: #999">ptrace</a> <a href="/tags/svc/" style="font-size: 1.1em; color: #999">svc</a> <a href="/tags/syscall/" style="font-size: 1.3em; color: #99a1ac">syscall</a> <a href="/tags/trcae/" style="font-size: 1.1em; color: #999">trcae</a> <a href="/tags/%E5%86%85%E5%AD%98/" style="font-size: 1.3em; color: #99a1ac">内存</a> <a href="/tags/%E5%86%85%E6%A0%B8/" style="font-size: 1.1em; color: #999">内核</a> <a href="/tags/%E5%8F%8D%E8%B0%83%E8%AF%95/" style="font-size: 1.1em; color: #999">反调试</a> <a href="/tags/%E5%9F%BA%E7%A1%80/" style="font-size: 1.1em; color: #999">基础</a> <a href="/tags/%E6%A3%80%E6%B5%8B/" style="font-size: 1.1em; color: #999">检测</a> <a href="/tags/%E6%B3%A8%E5%85%A5/" style="font-size: 1.3em; color: #99a1ac">注入</a> <a href="/tags/%E7%BC%96%E8%AF%91/" style="font-size: 1.5em; color: #99a9bf">编译</a></div></div><div class="card-widget card-archives"><div class="item-headline"><i class="fas fa-archive"></i><span>归档</span></div><ul class="card-archive-list"><li class="card-archive-list-item"><a class="card-archive-list-link" href="/archives/2022/11/"><span class="card-archive-list-date">十一月 2022</span><span class="card-archive-list-count">6</span></a></li><li class="card-archive-list-item"><a class="card-archive-list-link" href="/archives/2022/06/"><span class="card-archive-list-date">六月 2022</span><span class="card-archive-list-count">3</span></a></li><li class="card-archive-list-item"><a class="card-archive-list-link" href="/archives/2022/02/"><span class="card-archive-list-date">二月 2022</span><span class="card-archive-list-count">1</span></a></li></ul></div><div class="card-widget card-webinfo"><div class="item-headline"><i class="fas fa-chart-line"></i><span>网站资讯</span></div><div class="webinfo"><div class="webinfo-item"><div class="item-name">文章数目 :</div><div class="item-count">10</div></div><div class="webinfo-item"><div class="item-name">本站访客数 :</div><div class="item-count" id="busuanzi_value_site_uv"><i class="fa-solid fa-spinner fa-spin"></i></div></div><div class="webinfo-item"><div class="item-name">本站总访问量 :</div><div class="item-count" id="busuanzi_value_site_pv"><i class="fa-solid fa-spinner fa-spin"></i></div></div><div class="webinfo-item"><div class="item-name">最后更新时间 :</div><div class="item-count" id="last-push-date" data-lastPushDate="2022-11-30T13:48:04.142Z"><i class="fa-solid fa-spinner fa-spin"></i></div></div></div></div></div></div></main><footer id="footer"><div id="footer-wrap"><div class="copyright">&copy;2020 - 2022 By 听说你是小兔叽</div><div class="framework-info"><span>框架 </span><a target="_blank" rel="noopener" href="https://hexo.io">Hexo</a><span class="footer-separator">|</span><span>主题 </span><a target="_blank" rel="noopener" href="https://github.com/jerryc127/hexo-theme-butterfly">Butterfly</a></div></div></footer></div><div id="rightside"><div id="rightside-config-hide"><button id="darkmode" type="button" title="浅色和深色模式转换"><i class="fas fa-adjust"></i></button><button id="hide-aside-btn" type="button" title="单栏和双栏切换"><i class="fas fa-arrows-alt-h"></i></button></div><div id="rightside-config-show"><button id="rightside_config" type="button" title="设置"><i class="fas fa-cog fa-spin"></i></button><button id="go-up" type="button" title="回到顶部"><i class="fas fa-arrow-up"></i></button></div></div><div id="local-search"><div class="search-dialog"><nav class="search-nav"><span class="search-dialog-title">搜索</span><span id="loading-status"></span><button class="search-close-button"><i class="fas fa-times"></i></button></nav><div class="is-center" id="loading-database"><i class="fas fa-spinner fa-pulse"></i><span>  数据库加载中</span></div><div class="search-wrap"><div id="local-search-input"><div class="local-search-box"><input class="local-search-box--input" placeholder="搜索文章" type="text"/></div></div><hr/><div id="local-search-results"></div></div></div><div id="search-mask"></div></div><div><script src="/js/utils.js"></script><script src="/js/main.js"></script><script src="https://cdn.jsdelivr.net/npm/@fancyapps/ui/dist/fancybox.umd.min.js"></script><script src="https://cdn.jsdelivr.net/npm/node-snackbar/dist/snackbar.min.js"></script><script src="/js/search/local-search.js"></script><div class="js-pjax"><script>(() => {
+  function loadValine () {
+    function initValine () {
+      let initData = {
+        el: '#vcomment',
+        appId: '',
+        appKey: '',
+        serverURLs: ''
+      }
       
-        typing(text);
-      
-    })(window, document);
-  </script>
+      const valine = new Valine(initData)
+    }
 
+    if (typeof Valine === 'function') initValine() 
+    else getScript('https://cdn.jsdelivr.net/npm/valine/dist/Valine.min.js').then(initValine)
+  }
 
-
-
-  
-    <script  src="/js/img-lazyload.js" ></script>
-  
-
-
-
-
-  <script  src="/js/local-search.js" ></script>
-
-
-
-
-
-<!-- 主题的启动项，将它保持在最底部 -->
-<!-- the boot of the theme, keep it at the bottom -->
-<script  src="/js/boot.js" ></script>
-
-
-  
-
-  <noscript>
-    <div class="noscript-warning">博客在允许 JavaScript 运行的环境下浏览效果更佳</div>
-  </noscript>
-</body>
-</html>
+  window.pjax ? loadValine() : window.addEventListener('load', loadValine)
+})()</script></div><canvas class="fireworks" mobile="false"></canvas><script src="https://cdn.jsdelivr.net/npm/butterfly-extsrc/dist/fireworks.min.js"></script><script src="https://cdn.jsdelivr.net/npm/butterfly-extsrc/dist/activate-power-mode.min.js"></script><script>POWERMODE.colorful = true;
+POWERMODE.shake = true;
+POWERMODE.mobile = false;
+document.body.addEventListener('input', POWERMODE);
+</script><script async data-pjax src="//busuanzi.ibruce.info/busuanzi/2.3/busuanzi.pure.mini.js"></script></div></body></html>
