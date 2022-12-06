@@ -4,6 +4,19 @@
   
     
     <entry>
+      <title>seccomp-bpf</title>
+      <link href="/2022/12/06/seccomp-bpf/"/>
+      <url>/2022/12/06/seccomp-bpf/</url>
+      
+        <content type="html"><![CDATA[]]></content>
+      
+      
+      
+    </entry>
+    
+    
+    
+    <entry>
       <title>OPENAI</title>
       <link href="/2022/12/05/OPENAI/"/>
       <url>/2022/12/05/OPENAI/</url>
@@ -165,9 +178,9 @@
             
             <tag> 注入 </tag>
             
-            <tag> syscall </tag>
-            
             <tag> ptrace </tag>
+            
+            <tag> syscall </tag>
             
             <tag> svc </tag>
             
@@ -209,9 +222,9 @@
             
             <tag> 编译 </tag>
             
-            <tag> 内核 </tag>
-            
             <tag> syscall </tag>
+            
+            <tag> 内核 </tag>
             
         </tags>
       
